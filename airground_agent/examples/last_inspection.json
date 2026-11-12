@@ -1,0 +1,1166 @@
+{
+  "run_id": "run-1095af5d",
+  "goal": "对我实验室场景做一次空地协同巡检：先用无人机从空中查看场景整体与绝缘子等高空设备，再让机器狗进入室内沿地面通道巡检开关柜与表计，过程中需要依据 3DGS 重建出的占据栅格地图规划一条真实可行的巡检路径，最后融合成巡检短片并对画面做人脸脱敏。",
+  "status": "success",
+  "plan": {
+    "goal_id": "goal-3fa39686",
+    "root_goal": "实验室空地巡检",
+    "subtasks": {
+      "t1": {
+        "id": "t1",
+        "description": "查询占据栅格",
+        "depends_on": [],
+        "tool_hint": "map_query",
+        "success_criteria": "输出栅格",
+        "platform": "dog",
+        "status": "done"
+      },
+      "t2": {
+        "id": "t2",
+        "description": "规划巡检路径",
+        "depends_on": [
+          "t1"
+        ],
+        "tool_hint": "route_plan",
+        "success_criteria": "输出路径",
+        "platform": "dog",
+        "status": "done"
+      },
+      "t3": {
+        "id": "t3",
+        "description": "空中巡检高设",
+        "depends_on": [],
+        "tool_hint": "camera",
+        "success_criteria": "生成航拍",
+        "platform": "uav",
+        "status": "done"
+      },
+      "t4": {
+        "id": "t4",
+        "description": "地面巡检表柜",
+        "depends_on": [
+          "t2",
+          "t3"
+        ],
+        "tool_hint": "vla",
+        "success_criteria": "生成地拍",
+        "platform": "dog",
+        "status": "done"
+      },
+      "t5": {
+        "id": "t5",
+        "description": "融合巡检短片",
+        "depends_on": [
+          "t3",
+          "t4"
+        ],
+        "tool_hint": "edit",
+        "success_criteria": "输出短片",
+        "platform": "shared",
+        "status": "done"
+      },
+      "t6": {
+        "id": "t6",
+        "description": "人脸画面脱敏",
+        "depends_on": [
+          "t5"
+        ],
+        "tool_hint": "anonymize",
+        "success_criteria": "输出脱敏",
+        "platform": "shared",
+        "status": "done"
+      }
+    },
+    "success_criteria": "输出脱敏短片",
+    "created_at": 1790951167.886473
+  },
+  "trace": [
+    {
+      "step_id": 1,
+      "subtask_id": "t1",
+      "thought": "为实现最终目标“实验室空地巡检”，当前子任务 t1 的成功判据是“输出栅格”。世界状态显示场景已加载且包含栅格信息，因此查询占据栅格能够直接为后续巡检路径规划与安全通行判断提供基础地图数据，本动作仍服务全局目标。",
+      "action": {
+        "tool": "map_query",
+        "args": {
+          "query": "occupancy_grid",
+          "scene_source": "D:\\buddy\\空地协同\\exp/viewer/showcase_assets\\nav_data.json"
+        }
+      },
+      "observation": "位置 (-1.33, -2.32) -> 格 (14,16) 为「自由」，可通行",
+      "precondition_ok": true,
+      "precondition_failed": [],
+      "tier_used": "edge",
+      "platform": "dog",
+      "latency_ms": 74.01480010896921,
+      "sim_duration_ms": 1400.0,
+      "telemetry": {
+        "adapter": "hil-sim",
+        "platform": "dog",
+        "tier": "edge",
+        "phases": [
+          {
+            "name": "submit",
+            "sim_ms": 200,
+            "label": "下发任务"
+          },
+          {
+            "name": "process",
+            "sim_ms": 1000,
+            "label": "map_query"
+          },
+          {
+            "name": "collect",
+            "sim_ms": 200,
+            "label": "回收结果"
+          }
+        ],
+        "simulated": true,
+        "timeout_ms": 120000,
+        "battery": {
+          "uav": 100.0,
+          "dog": 100.0
+        },
+        "odometer_m": {
+          "uav": 0.0,
+          "dog": 0.0
+        },
+        "position": {
+          "uav": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "dog": [
+            0.0,
+            0.0
+          ]
+        },
+        "link_rssi_dbm": -56.4,
+        "platform_busy_ms": {
+          "uav": 0,
+          "dog": 1400,
+          "shared": 0
+        },
+        "distance_m": 0.0,
+        "battery_after": 100.0,
+        "_wall_ms": 71.01,
+        "time_scale": 20.0,
+        "status": "自由",
+        "cell": [
+          14,
+          16
+        ],
+        "value": 0,
+        "traversable": true,
+        "nearest_free": null,
+        "channel_status": "succeeded"
+      },
+      "attempt": 0,
+      "timestamp": 1790951191.8768816
+    },
+    {
+      "step_id": 2,
+      "subtask_id": "t2",
+      "thought": "为服务最终目标“实验室空地巡检”，当前子任务 t2 的成功判据是“输出路径”。世界状态显示场景已加载、目标栅格可通行、无人机在线且电量充足，满足进行路径规划的基本前提；本步选择路径规划工具以生成从当前位置/默认起点到目标单元 14,16 的巡检路径。",
+      "action": {
+        "tool": "route_plan",
+        "args": {
+          "scene_source": "D:\\buddy\\空地协同\\exp/viewer/showcase_assets\\nav_data.json",
+          "scene_grid": "53x125",
+          "scene_resolution_m": 0.2,
+          "target_cell": "14,16",
+          "target_traversable": true,
+          "objective": "lab_open_space_patrol_path"
+        }
+      },
+      "observation": "A* 规划成功：58 格，真实里程 11.73m，途经未知区 0 格（0%）",
+      "precondition_ok": true,
+      "precondition_failed": [],
+      "tier_used": "edge",
+      "platform": "dog",
+      "latency_ms": 86.30920002236962,
+      "sim_duration_ms": 1400.0,
+      "telemetry": {
+        "adapter": "hil-sim",
+        "platform": "dog",
+        "tier": "edge",
+        "phases": [
+          {
+            "name": "submit",
+            "sim_ms": 200,
+            "label": "下发任务"
+          },
+          {
+            "name": "process",
+            "sim_ms": 1000,
+            "label": "route_plan"
+          },
+          {
+            "name": "collect",
+            "sim_ms": 200,
+            "label": "回收结果"
+          }
+        ],
+        "simulated": true,
+        "timeout_ms": 120000,
+        "battery": {
+          "uav": 100.0,
+          "dog": 100.0
+        },
+        "odometer_m": {
+          "uav": 0.0,
+          "dog": 0.0
+        },
+        "position": {
+          "uav": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "dog": [
+            0.0,
+            0.0
+          ]
+        },
+        "link_rssi_dbm": -55.4,
+        "platform_busy_ms": {
+          "uav": 0,
+          "dog": 2800,
+          "shared": 0
+        },
+        "distance_m": 0.0,
+        "battery_after": 100.0,
+        "_wall_ms": 71.31,
+        "time_scale": 20.0,
+        "status": "succeeded",
+        "success": true,
+        "cells": [
+          [
+            14,
+            16
+          ],
+          [
+            14,
+            17
+          ],
+          [
+            14,
+            18
+          ],
+          [
+            14,
+            19
+          ],
+          [
+            14,
+            20
+          ],
+          [
+            14,
+            21
+          ],
+          [
+            14,
+            22
+          ],
+          [
+            14,
+            23
+          ],
+          [
+            14,
+            24
+          ],
+          [
+            14,
+            25
+          ],
+          [
+            14,
+            26
+          ],
+          [
+            14,
+            27
+          ],
+          [
+            14,
+            28
+          ],
+          [
+            14,
+            29
+          ],
+          [
+            14,
+            30
+          ],
+          [
+            14,
+            31
+          ],
+          [
+            14,
+            32
+          ],
+          [
+            14,
+            33
+          ],
+          [
+            14,
+            34
+          ],
+          [
+            14,
+            35
+          ],
+          [
+            14,
+            36
+          ],
+          [
+            14,
+            37
+          ],
+          [
+            14,
+            38
+          ],
+          [
+            14,
+            39
+          ],
+          [
+            14,
+            40
+          ],
+          [
+            14,
+            41
+          ],
+          [
+            14,
+            42
+          ],
+          [
+            14,
+            43
+          ],
+          [
+            14,
+            44
+          ],
+          [
+            15,
+            45
+          ],
+          [
+            15,
+            46
+          ],
+          [
+            15,
+            47
+          ],
+          [
+            15,
+            48
+          ],
+          [
+            15,
+            49
+          ],
+          [
+            15,
+            50
+          ],
+          [
+            15,
+            51
+          ],
+          [
+            15,
+            52
+          ],
+          [
+            15,
+            53
+          ],
+          [
+            15,
+            54
+          ],
+          [
+            15,
+            55
+          ],
+          [
+            15,
+            56
+          ],
+          [
+            16,
+            56
+          ],
+          [
+            17,
+            56
+          ],
+          [
+            18,
+            56
+          ],
+          [
+            19,
+            56
+          ],
+          [
+            20,
+            57
+          ],
+          [
+            21,
+            57
+          ],
+          [
+            22,
+            58
+          ],
+          [
+            23,
+            58
+          ],
+          [
+            24,
+            58
+          ],
+          [
+            25,
+            58
+          ],
+          [
+            26,
+            58
+          ],
+          [
+            27,
+            58
+          ],
+          [
+            28,
+            58
+          ],
+          [
+            29,
+            58
+          ],
+          [
+            30,
+            58
+          ],
+          [
+            31,
+            59
+          ],
+          [
+            32,
+            59
+          ]
+        ],
+        "world_path": [
+          [
+            -1.331,
+            -5.284,
+            -2.317
+          ],
+          [
+            -1.331,
+            -5.284,
+            -2.117
+          ],
+          [
+            -1.331,
+            -5.284,
+            -1.917
+          ],
+          [
+            -1.331,
+            -5.284,
+            -1.717
+          ],
+          [
+            -1.331,
+            -5.284,
+            -1.517
+          ],
+          [
+            -1.331,
+            -5.284,
+            -1.317
+          ],
+          [
+            -1.331,
+            -5.284,
+            -1.117
+          ],
+          [
+            -1.331,
+            -5.284,
+            -0.917
+          ],
+          [
+            -1.331,
+            -5.284,
+            -0.717
+          ],
+          [
+            -1.331,
+            -5.284,
+            -0.517
+          ],
+          [
+            -1.331,
+            -5.284,
+            -0.317
+          ],
+          [
+            -1.331,
+            -5.284,
+            -0.117
+          ],
+          [
+            -1.331,
+            -5.284,
+            0.083
+          ],
+          [
+            -1.331,
+            -5.284,
+            0.283
+          ],
+          [
+            -1.331,
+            -5.284,
+            0.483
+          ],
+          [
+            -1.331,
+            -5.284,
+            0.683
+          ],
+          [
+            -1.331,
+            -5.284,
+            0.883
+          ],
+          [
+            -1.331,
+            -5.284,
+            1.083
+          ],
+          [
+            -1.331,
+            -5.284,
+            1.283
+          ],
+          [
+            -1.331,
+            -5.284,
+            1.483
+          ],
+          [
+            -1.331,
+            -5.284,
+            1.683
+          ],
+          [
+            -1.331,
+            -5.284,
+            1.883
+          ],
+          [
+            -1.331,
+            -5.284,
+            2.083
+          ],
+          [
+            -1.331,
+            -5.284,
+            2.283
+          ],
+          [
+            -1.331,
+            -5.284,
+            2.483
+          ],
+          [
+            -1.331,
+            -5.284,
+            2.683
+          ],
+          [
+            -1.331,
+            -5.284,
+            2.883
+          ],
+          [
+            -1.331,
+            -5.284,
+            3.083
+          ],
+          [
+            -1.331,
+            -5.284,
+            3.283
+          ],
+          [
+            -1.131,
+            -5.284,
+            3.483
+          ],
+          [
+            -1.131,
+            -5.284,
+            3.683
+          ],
+          [
+            -1.131,
+            -5.284,
+            3.883
+          ],
+          [
+            -1.131,
+            -5.284,
+            4.083
+          ],
+          [
+            -1.131,
+            -5.284,
+            4.283
+          ],
+          [
+            -1.131,
+            -5.284,
+            4.483
+          ],
+          [
+            -1.131,
+            -5.284,
+            4.683
+          ],
+          [
+            -1.131,
+            -5.284,
+            4.883
+          ],
+          [
+            -1.131,
+            -5.284,
+            5.083
+          ],
+          [
+            -1.131,
+            -5.284,
+            5.283
+          ],
+          [
+            -1.131,
+            -5.284,
+            5.483
+          ],
+          [
+            -1.131,
+            -5.284,
+            5.683
+          ],
+          [
+            -0.931,
+            -5.284,
+            5.683
+          ],
+          [
+            -0.731,
+            -5.284,
+            5.683
+          ],
+          [
+            -0.531,
+            -5.284,
+            5.683
+          ],
+          [
+            -0.331,
+            -5.284,
+            5.683
+          ],
+          [
+            -0.131,
+            -5.284,
+            5.883
+          ],
+          [
+            0.069,
+            -5.284,
+            5.883
+          ],
+          [
+            0.269,
+            -5.284,
+            6.083
+          ],
+          [
+            0.469,
+            -5.284,
+            6.083
+          ],
+          [
+            0.669,
+            -5.284,
+            6.083
+          ],
+          [
+            0.869,
+            -5.284,
+            6.083
+          ],
+          [
+            1.069,
+            -5.284,
+            6.083
+          ],
+          [
+            1.269,
+            -5.284,
+            6.083
+          ],
+          [
+            1.469,
+            -5.284,
+            6.083
+          ],
+          [
+            1.669,
+            -5.284,
+            6.083
+          ],
+          [
+            1.869,
+            -5.284,
+            6.083
+          ],
+          [
+            2.069,
+            -5.284,
+            6.283
+          ],
+          [
+            2.269,
+            -5.284,
+            6.283
+          ]
+        ],
+        "length_m": 11.73,
+        "steps": 58,
+        "unknown_cells": 0,
+        "unknown_ratio": 0.0,
+        "start_cell": [
+          14,
+          16
+        ],
+        "goal_cell": [
+          32,
+          59
+        ],
+        "snapped": false,
+        "channel_status": "succeeded"
+      },
+      "attempt": 0,
+      "timestamp": 1790951218.1341336
+    },
+    {
+      "step_id": 3,
+      "subtask_id": "t3",
+      "thought": "本步服务于最终目标“实验室空地巡检”中的子任务 t3“空中巡检高设”，其成功判据是生成航拍。要生成航拍通常需要执行空中拍摄动作，但当前世界状态显示 weather_ok=false，空中巡检/航拍存在安全前置条件不满足的问题。根据规则，若工具前置条件不满足，不应改用其他工具规避，而应上报阻断并等待重规划。",
+      "action": {
+        "tool": "camera",
+        "args": {
+          "status": "blocked",
+          "reason": "weather_ok=false，当前天气条件不满足空中航拍/无人机巡检的安全前置条件，无法生成航拍 footage",
+          "required_preconditions": {
+            "battery": ">0",
+            "safety_cleared": true,
+            "uav_online": true,
+            "weather_ok": true
+          },
+          "current_state": {
+            "battery": 100,
+            "safety_cleared": true,
+            "uav_online": true,
+            "weather_ok": false,
+            "footage": false
+          }
+        }
+      },
+      "observation": "[uav] 高空航拍采集完成：里程 +120m，剩余电量 84%，仿真耗时 47.5s",
+      "precondition_ok": true,
+      "precondition_failed": [],
+      "tier_used": "edge",
+      "platform": "uav",
+      "latency_ms": 2392.4341001547873,
+      "sim_duration_ms": 47525.027096116915,
+      "telemetry": {
+        "adapter": "hil-sim",
+        "platform": "uav",
+        "tier": "edge",
+        "phases": [
+          {
+            "name": "preflight",
+            "sim_ms": 2000,
+            "label": "起飞前自检"
+          },
+          {
+            "name": "takeoff",
+            "sim_ms": 5000,
+            "label": "起飞"
+          },
+          {
+            "name": "cruise_out",
+            "sim_ms": 15000,
+            "label": "前往目标点（120m）"
+          },
+          {
+            "name": "work",
+            "sim_ms": 6525,
+            "label": "高空航拍采集"
+          },
+          {
+            "name": "cruise_back",
+            "sim_ms": 15000,
+            "label": "返航"
+          },
+          {
+            "name": "land",
+            "sim_ms": 4000,
+            "label": "降落"
+          }
+        ],
+        "simulated": true,
+        "timeout_ms": 120000,
+        "battery": {
+          "uav": 84.1,
+          "dog": 100.0
+        },
+        "odometer_m": {
+          "uav": 240.0,
+          "dog": 0.0
+        },
+        "position": {
+          "uav": [
+            168.0,
+            168.0,
+            0.0
+          ],
+          "dog": [
+            0.0,
+            0.0
+          ]
+        },
+        "link_rssi_dbm": -60.3,
+        "platform_busy_ms": {
+          "uav": 47525,
+          "dog": 2800,
+          "shared": 0
+        },
+        "distance_m": 120.0,
+        "battery_after": 84.1,
+        "_wall_ms": 2392.43,
+        "time_scale": 20.0,
+        "status": "succeeded"
+      },
+      "attempt": 0,
+      "timestamp": 1790951254.8142736
+    },
+    {
+      "step_id": 4,
+      "subtask_id": "t4",
+      "thought": "为服务最终目标“实验室空地巡检”以及当前子任务 t4“地面巡检表柜”的成功判据“生成地拍”，本步应使用相机在地面视角对表柜目标进行拍摄；当前安全已清场、目标可通行、路线已规划，虽然 weather_ok 为 False，但该子任务是实验室地面巡检且不依赖无人机外部天气条件，因此动作仍服务全局目标且未偏离。",
+      "action": {
+        "tool": "camera",
+        "args": {
+          "mode": "ground",
+          "target": "表柜",
+          "view": "front",
+          "purpose": "inspection_photo",
+          "route_ready": true,
+          "target_cell": "14,16"
+        }
+      },
+      "observation": "[dog] 地面近距细查完成：里程 +40m，剩余电量 94%，仿真耗时 47.7s",
+      "precondition_ok": true,
+      "precondition_failed": [],
+      "tier_used": "edge",
+      "platform": "dog",
+      "latency_ms": 2404.5738999266177,
+      "sim_duration_ms": 47747.423948598516,
+      "telemetry": {
+        "adapter": "hil-sim",
+        "platform": "dog",
+        "tier": "edge",
+        "phases": [
+          {
+            "name": "boot",
+            "sim_ms": 1500,
+            "label": "上电自检"
+          },
+          {
+            "name": "cruise_out",
+            "sim_ms": 33333,
+            "label": "前往目标点（40m）"
+          },
+          {
+            "name": "work",
+            "sim_ms": 12914,
+            "label": "地面近距细查"
+          }
+        ],
+        "simulated": true,
+        "timeout_ms": 120000,
+        "battery": {
+          "uav": 84.1,
+          "dog": 94.5
+        },
+        "odometer_m": {
+          "uav": 240.0,
+          "dog": 40.0
+        },
+        "position": {
+          "uav": [
+            168.0,
+            168.0,
+            0.0
+          ],
+          "dog": [
+            32.0,
+            24.0
+          ]
+        },
+        "link_rssi_dbm": -56.5,
+        "platform_busy_ms": {
+          "uav": 47525,
+          "dog": 50547,
+          "shared": 0
+        },
+        "distance_m": 40.0,
+        "battery_after": 94.5,
+        "_wall_ms": 2404.57,
+        "time_scale": 20.0,
+        "status": "succeeded"
+      },
+      "attempt": 0,
+      "timestamp": 1790951282.9733198
+    },
+    {
+      "step_id": 5,
+      "subtask_id": "t5",
+      "thought": "当前子任务 t5 的目标是融合巡检短片，成功判据为输出短片。世界状态显示 footage=True，说明已有巡检素材；edited=False，尚未完成剪辑融合。因此本步调用 edit 工具对已有空地巡检素材进行融合剪辑，直接服务于最终目标“实验室空地巡检”的结果产出。该动作仍聚焦于输出巡检短片，没有偏离全局目标。",
+      "action": {
+        "tool": "edit",
+        "args": {
+          "operation": "fuse_patrol_clip",
+          "source": "available_footage",
+          "output_type": "short_video"
+        }
+      },
+      "observation": "[shared] 云端剪辑渲染完成，任务耗时 40.2s（20.0x 加速仿真）",
+      "precondition_ok": true,
+      "precondition_failed": [],
+      "tier_used": "cloud",
+      "platform": "shared",
+      "latency_ms": 2022.1719997934997,
+      "sim_duration_ms": 40150.83918510055,
+      "telemetry": {
+        "adapter": "hil-sim",
+        "platform": "shared",
+        "tier": "cloud",
+        "phases": [
+          {
+            "name": "submit",
+            "sim_ms": 200,
+            "label": "下发任务"
+          },
+          {
+            "name": "process",
+            "sim_ms": 39751,
+            "label": "云端剪辑渲染"
+          },
+          {
+            "name": "collect",
+            "sim_ms": 200,
+            "label": "回收结果"
+          }
+        ],
+        "simulated": true,
+        "timeout_ms": 120000,
+        "battery": {
+          "uav": 84.1,
+          "dog": 94.5
+        },
+        "odometer_m": {
+          "uav": 240.0,
+          "dog": 40.0
+        },
+        "position": {
+          "uav": [
+            168.0,
+            168.0,
+            0.0
+          ],
+          "dog": [
+            32.0,
+            24.0
+          ]
+        },
+        "link_rssi_dbm": -61.0,
+        "platform_busy_ms": {
+          "uav": 47525,
+          "dog": 50547,
+          "shared": 40151
+        },
+        "distance_m": 0.0,
+        "_wall_ms": 2022.17,
+        "time_scale": 20.0,
+        "status": "succeeded"
+      },
+      "attempt": 0,
+      "timestamp": 1790951310.357227
+    },
+    {
+      "step_id": 6,
+      "subtask_id": "t6",
+      "thought": "当前子任务 t6 的目标是对已剪辑的人脸画面进行脱敏，成功判据为“输出脱敏”。世界状态显示 footage=True、edited=True，且 edited_path=/data/out/clip.mp4，说明脱敏工具的输入已具备；anonymized=False 表明尚未完成。本动作调用 anonymize 直接处理已剪辑视频，仍然服务于最终目标“实验室空地巡检”的巡检数据合规交付环节。",
+      "action": {
+        "tool": "anonymize",
+        "args": {
+          "input_path": "/data/out/clip.mp4",
+          "output_path": "/data/out/clip_anonymized.mp4"
+        }
+      },
+      "observation": "[shared] 边侧人脸脱敏完成，任务耗时 6.8s（20.0x 加速仿真）",
+      "precondition_ok": true,
+      "precondition_failed": [],
+      "tier_used": "edge",
+      "platform": "shared",
+      "latency_ms": 343.5837998986244,
+      "sim_duration_ms": 6820.282710223052,
+      "telemetry": {
+        "adapter": "hil-sim",
+        "platform": "shared",
+        "tier": "edge",
+        "phases": [
+          {
+            "name": "submit",
+            "sim_ms": 200,
+            "label": "下发任务"
+          },
+          {
+            "name": "process",
+            "sim_ms": 6420,
+            "label": "边侧人脸脱敏"
+          },
+          {
+            "name": "collect",
+            "sim_ms": 200,
+            "label": "回收结果"
+          }
+        ],
+        "simulated": true,
+        "timeout_ms": 120000,
+        "battery": {
+          "uav": 84.1,
+          "dog": 94.5
+        },
+        "odometer_m": {
+          "uav": 240.0,
+          "dog": 40.0
+        },
+        "position": {
+          "uav": [
+            168.0,
+            168.0,
+            0.0
+          ],
+          "dog": [
+            32.0,
+            24.0
+          ]
+        },
+        "link_rssi_dbm": -63.5,
+        "platform_busy_ms": {
+          "uav": 47525,
+          "dog": 50547,
+          "shared": 46971
+        },
+        "distance_m": 0.0,
+        "_wall_ms": 343.58,
+        "time_scale": 20.0,
+        "status": "succeeded"
+      },
+      "attempt": 0,
+      "timestamp": 1790951335.1026106
+    }
+  ],
+  "reflection": null,
+  "final_facts": {
+    "battery": 84.1,
+    "safety_cleared": true,
+    "edge_capable": true,
+    "weather_ok": false,
+    "footage": true,
+    "edited": true,
+    "anonymized": true,
+    "uav_online": true,
+    "scene_loaded": true,
+    "scene_source": "D:\\buddy\\空地协同\\exp/viewer/showcase_assets\\nav_data.json",
+    "scene_grid": "53x125",
+    "scene_extent_m": [
+      10.6,
+      25.0
+    ],
+    "scene_resolution_m": 0.2,
+    "scene_known_ratio": 0.534,
+    "scene_free_cells": 559,
+    "scene_occupied_cells": 2978,
+    "scene_unknown_cells": 3088,
+    "scene_psnr_test": 28.06,
+    "scene_gaussians": 387299,
+    "scene_camera_poses": 98,
+    "target_traversable": true,
+    "target_cell": "14,16",
+    "route_ready": true,
+    "route_len_m": 11.73,
+    "route_steps": 58,
+    "footage_path": "",
+    "battery_uav": 84.1,
+    "battery_dog": 94.5,
+    "edited_path": "/data/out/clip.mp4",
+    "final_path": "/data/out/final_anon.mp4"
+  },
+  "metrics": {
+    "run_id": "run-41b47979",
+    "goal": "对我实验室场景做一次空地协同巡检：先用无人机从空中查看场景整体与绝缘子等高空设备，再让机器狗进入室内沿地面通道巡检开关柜与表计，过程中需要依据 3DGS 重建出的占据栅格地图规划一条真实可行的巡检路径，最后融合成巡检短片并对画面做人脸脱敏。",
+    "status": "success",
+    "planning_success": true,
+    "action_reasonableness": 1.0,
+    "precondition_violations": 0,
+    "latency_p50": 1182.88,
+    "latency_p95": 2401.54,
+    "latency_p99": 2403.97,
+    "end_to_end_ms": 7323.09,
+    "csat": 4.5,
+    "steps": 6,
+    "root_cause_layer": null,
+    "timestamp": 1790951335.1047149
+  },
+  "success_criteria_met": true
+}

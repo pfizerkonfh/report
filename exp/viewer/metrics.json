@@ -1,0 +1,37 @@
+{
+  "scene": "实验室场景 (LLFF 前向采集)",
+  "model_format": "3D Gaussian Splatting (.ply, sh_degree=3)",
+  "gaussian_count_10000": 387299,
+  "gaussian_count_7000": 375387,
+  "iterations": 10000,
+  "test_views": 13,
+  "train_views": 85,
+  "camera_poses": 98,
+  "scene_centroid": [
+    0.1666,
+    0.086,
+    0.2935
+  ],
+  "init_camera_position": [
+    3.0147,
+    1.5931,
+    5.3716
+  ],
+  "psnr_test_mean": 28.06,
+  "psnr_train_mean": 33.4,
+  "psnr_test_per_image": [
+    38.23,
+    37.14,
+    23.44,
+    21.34,
+    16.96,
+    25.95,
+    22.16,
+    25.84,
+    29.18,
+    26.8,
+    25.6,
+    32.48,
+    39.62
+  ]
+}

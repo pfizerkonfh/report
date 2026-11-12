@@ -1,0 +1,58 @@
+# 空地协同多智能体系统默认配置
+log_level: INFO
+
+llm:
+  backend: mock          # mock | langchain
+  model_name: gpt-4o-mini
+  temperature: 0.2
+  max_tokens: 1024
+
+planner:
+  max_retries: 3
+
+reasoner:
+  max_steps: 32
+  max_replan_attempts: 2
+
+router:
+  edge_latency_budget_ms: 60.0
+  cloud_latency_budget_ms: 300.0
+  degrade_rtt_ms: 200.0
+  backoff_base_ms: 200.0
+  backoff_max_ms: 5000.0
+
+vla:
+  baseline_latency_ms: 65.0
+  enable_moe: true
+  enable_distill: true
+  quant_mode: awq_int4
+  enable_flash_attn: true
+  enable_paged_attn: true
+  target_frequency_hz: 20.0
+
+eval:
+  csat_default: 4.5
+  ab_guardrail_latency_drop_ms: 20.0
+
+# 执行通道（ToolAdapter）：决定任务由谁真正做出来
+# mode: legacy(原Mock/零耗时) | sim(硬件在环仿真) | playback(录播回放) | ros2(真机)
+sim:
+  mode: legacy          # 默认保持 legacy，保证既有回归测试行为不变
+  time_scale: 10.0      # 仿真加速比（1 = 实时；10 = 60s 任务真实只需 6s）
+  failure_rate: 0.0     # 作业失败注入概率
+  comm_loss_rate: 0.0   # 链路中断注入概率
+  timeout_ms: 120000.0  # 单次调用超时（仿真时长口径；一次无人机架次约 49s）
+  seed: null            # 固定种子后仿真可复现
+  playback_file: ""     # 留空则用 examples/sample_playback.jsonl
+  uav_speed_mps: 8.0
+  dog_speed_mps: 1.2
+  min_battery_pct: 15.0
+
+# 感知层：接入 3DGS 实验室场景重建的真实产物
+# 真实数据来源：exp/viewer/showcase_assets/nav_data.json（俯视 occupancy 栅格）+ nav_points.json + metrics.json
+perception:
+  enabled: true           # 关闭则回退为纯逻辑仿真（不加载真实场景）
+  data_dir: ""            # 留空则自动向上查找 exp/viewer/showcase_assets/nav_data.json
+  allow_unknown: true     # A* 规划是否允许穿越未知格
+  auto_inject_facts: true # 把真实场景统计注入初始 WorldState，供 Precondition 校验
+  max_points: 6000

@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>空地协同无人巡检系统 — 技术报告</title>
+<style>
+  :root{
+    --ink:#1a1a1a; --ink2:#444; --ink3:#666;
+    --line:#e2e2e2; --line2:#c9c9c9;
+    --accent:#0f4c81; --accent-soft:#eaf2f9;
+    --uav:#185FA5; --uav-bg:#E6F1FB;
+    --dog:#BA7517; --dog-bg:#FAEEDA;
+    --shared:#534AB7; --shared-bg:#EEEDFE;
+    --ok:#0F6E56; --ok-bg:#E1F5EE;
+    --warn:#854F0B; --warn-bg:#FAEEDA;
+    --bad:#A32D2D; --bad-bg:#FCEBEB;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:0; background:#fafafa; color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.75;
+  }
+  .page{max-width:940px; margin:0 auto; background:#fff; padding:56px 64px 72px;
+        box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  h1{font-size:27px; font-weight:600; margin:0 0 6px; letter-spacing:-.2px}
+  .sub{font-size:15px; color:var(--ink3); margin:0 0 4px}
+  .meta{font-size:13px; color:var(--ink3); margin:0 0 30px; padding-bottom:22px; border-bottom:2px solid var(--accent)}
+  h2{font-size:20px; font-weight:600; margin:42px 0 14px; color:var(--accent);
+     padding-left:11px; border-left:4px solid var(--accent)}
+  h3{font-size:16px; font-weight:600; margin:26px 0 10px; color:var(--ink)}
+  h4{font-size:14px; font-weight:600; margin:18px 0 8px; color:var(--ink2)}
+  p{margin:9px 0}
+  ul,ol{margin:9px 0; padding-left:22px}
+  li{margin:5px 0}
+  code{background:#f4f4f4; padding:1px 5px; border-radius:3px; font-size:13px;
+       font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace}
+  pre{background:#f7f8fa; border:1px solid var(--line); border-left:3px solid var(--accent);
+      padding:12px 14px; border-radius:4px; overflow-x:auto; font-size:12.5px; line-height:1.6;
+      font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; margin:12px 0}
+  table{border-collapse:collapse; width:100%; margin:14px 0; font-size:13.5px}
+  th,td{border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top}
+  th{background:#f2f5f8; font-weight:600; color:var(--ink)}
+  td.num{font-family:"SFMono-Regular",Consolas,monospace; font-size:12.5px; white-space:nowrap}
+  .tag{display:inline-block; padding:1px 7px; border-radius:3px; font-size:11.5px;
+       font-weight:600; white-space:nowrap}
+  .t-real{background:var(--ok-bg); color:var(--ok)}
+  .t-sim{background:var(--warn-bg); color:var(--warn)}
+  .t-na{background:var(--bad-bg); color:var(--bad)}
+  .box{background:var(--accent-soft); border-left:4px solid var(--accent);
+       padding:13px 16px; margin:16px 0; border-radius:0 4px 4px 0}
+  .box.warn{background:var(--warn-bg); border-left-color:var(--warn)}
+  .box.ok{background:var(--ok-bg); border-left-color:var(--ok)}
+  .box p{margin:5px 0}
+  .box .bt{font-weight:600; margin-bottom:6px; font-size:14px}
+  figure{margin:20px 0; text-align:center}
+  figcaption{font-size:12.5px; color:var(--ink3); margin-top:8px}
+  .kv{display:grid; grid-template-columns:150px 1fr; gap:4px 14px; font-size:13.5px; margin:10px 0}
+  .kv dt{color:var(--ink3)}
+  .kv dd{margin:0; font-family:"SFMono-Regular",Consolas,monospace; font-size:12.5px}
+  .toc{background:#f7f8fa; border:1px solid var(--line); border-radius:5px; padding:16px 22px; margin:26px 0}
+  .toc ol{margin:6px 0; padding-left:20px; columns:2; column-gap:34px}
+  .toc li{margin:3px 0; font-size:13.5px}
+  .foot{margin-top:46px; padding-top:18px; border-top:1px solid var(--line);
+        font-size:12.5px; color:var(--ink3)}
+  @media print{
+    body{background:#fff} .page{box-shadow:none; padding:0; max-width:none}
+    h2{page-break-after:avoid} table,figure{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>空地协同无人巡检系统 — 技术报告</h1>
+<p class="sub">多智能体任务分配与边缘智能决策系统（第 4 子项）</p>
+<p class="meta">版本 v2 &nbsp;·&nbsp; 2026-10-18 &nbsp;·&nbsp; 代码规模 39 个 Python 模块 &nbsp;·&nbsp; 测试 65/65 通过</p>
+
+<div class="box warn">
+  <div class="bt">关于本报告的数据可信度</div>
+  <p>本报告对每一项性能指标都标注了<b>数据来源</b>：<span class="tag t-real">实测</span> 表示可在本机复现的真实测量；<span class="tag t-sim">推演</span> 表示由行为模型或公式计算得出、未经硬件验证；<span class="tag t-na">占位</span> 表示外部传入、系统自身不产生该数据。</p>
+  <p><b>截至本报告，系统尚无任何一条来自真实机器人硬件的实测数据。</b>所有结论成立范围限于「软件正确性与方法设计」，不适用于「真机性能论证」。</p>
+</div>
+
+<div class="toc">
+  <b>目录</b>
+  <ol>
+    <li>项目背景与问题定义</li>
+    <li>系统总体架构</li>
+    <li>关键技术</li>
+    <li>解决的问题</li>
+    <li>性能与验证结果</li>
+    <li>业务就绪度评估</li>
+    <li>演进路线</li>
+    <li>结论</li>
+  </ol>
+</div>
+
+<h2>1. 项目背景与问题定义</h2>
+
+<p>变电站巡检正从「人工定期巡视」转向「无人化自主巡检」。本系统定位于国网变电站<b>空地协同</b>无人巡检体系中的第 (4) 子项——多智能体任务分配与边缘智能决策系统，负责把一句自然语言任务指令，拆解为可在无人机与机器狗之间分工、在端侧与云端之间分流的执行计划，并保证执行过程可观测、可归因、可恢复。</p>
+
+<p>「空地协同」在本系统中有明确的工程含义：规划完成后，<b>部分子任务交由无人机（UAV）执行，部分交由机器狗（四足机器人）执行</b>，两者共享同一份世界状态与同一套前置校验规则。这与「端-边-云」的计算层级维度相互正交，需要同时建模。</p>
+
+<h3>1.1 需要解决的六个关键问题</h3>
+<table>
+  <tr><th style="width:15%">问题</th><th style="width:45%">具体表现</th><th>本系统的应对</th></tr>
+  <tr><td>工具误调用</td><td>LLM 在条件不满足时仍调用工具，产生无效或危险动作</td><td>工具携带可判定的 Precondition / Effect 语义契约，执行前硬校验，不满足即阻断并升级重规划</td></tr>
+  <tr><td>边缘时延</td><td>端侧 VLA 模型推理需满足实时性约束</td><td>端-边-云三级路由，按工具的计算强度与隐私等级选路，端侧优先、云端兜底</td></tr>
+  <tr><td>长程任务可恢复</td><td>长链条任务中途失败后，系统无感知、无补救</td><td>ReAct 逐步推理 + Reflexion 失败归因 + 有上限的重规划</td></tr>
+  <tr><td>缺乏统一评测</td><td>规划质量、动作合理性、时延分布无法横向比较</td><td>统一评测体系，输出规划成功率、动作合理度、p50/p95/p99、CSAT 与失败层级归因</td></tr>
+  <tr><td>物理平台未建模</td><td>「无人机做什么、机器狗做什么」停留在自然语言描述</td><td>引入 Platform 枚举维度，每步记录执行平台，与 RouteTier 正交</td></tr>
+  <tr><td>POC 难以走向生产</td><td>工具全是 Mock，换真机需要大改</td><td>ToolAdapter 抽象层解耦语义契约与执行通道，换真机只换 Adapter</td></tr>
+</table>
+
+<h2>2. 系统总体架构</h2>
+
+<p>系统采用<b>单向分层</b>结构：上层产出计划，下层负责执行与度量，层间通过显式的数据契约（Plan / TraceStep / ToolResult / EvalRecord）通信，不共享可变状态。</p>
+
+<figure>
+<svg viewBox="0 0 880 400" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+  </defs>
+
+  <rect x="60" y="16" width="760" height="52" rx="6" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="440" y="36" text-anchor="middle" font-size="14" font-weight="600" fill="#3C3489" font-family="sans-serif">感知层 Perception · 真实 3DGS 重建产物</text>
+  <text x="440" y="56" text-anchor="middle" font-size="12" fill="#534AB7" font-family="sans-serif">占据栅格 53×125 @0.2m · 点云 6000 · PSNR 28.06dB → 注入 WorldState 真实事实</text>
+
+  <rect x="60" y="92" width="760" height="52" rx="6" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="440" y="112" text-anchor="middle" font-size="14" font-weight="600" fill="#0C447C" font-family="sans-serif">编排层 Orchestrator</text>
+  <text x="440" y="132" text-anchor="middle" font-size="12" fill="#185FA5" font-family="sans-serif">装配场景 / 工具集 / 执行通道 · 事件流下发 · 统一评测收口</text>
+
+  <rect x="60" y="168" width="240" height="56" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+  <text x="180" y="190" text-anchor="middle" font-size="14" font-weight="600" fill="#085041" font-family="sans-serif">规划层 Planner</text>
+  <text x="180" y="210" text-anchor="middle" font-size="11.5" fill="#0F6E56" font-family="sans-serif">LangGraph · 目标对齐</text>
+
+  <rect x="320" y="168" width="240" height="56" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+  <text x="440" y="190" text-anchor="middle" font-size="14" font-weight="600" fill="#085041" font-family="sans-serif">决策层 Reasoner</text>
+  <text x="440" y="210" text-anchor="middle" font-size="11.5" fill="#0F6E56" font-family="sans-serif">ReAct · 前置校验 · Reflexion</text>
+
+  <rect x="580" y="168" width="240" height="56" rx="6" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+  <text x="700" y="190" text-anchor="middle" font-size="14" font-weight="600" fill="#085041" font-family="sans-serif">路由层 Router</text>
+  <text x="700" y="210" text-anchor="middle" font-size="11.5" fill="#0F6E56" font-family="sans-serif">端 / 边 / 云 选路降级</text>
+
+  <rect x="60" y="248" width="760" height="56" rx="6" fill="#FAEEDA" stroke="#BA7517" stroke-width="1"/>
+  <text x="440" y="270" text-anchor="middle" font-size="14" font-weight="600" fill="#633806" font-family="sans-serif">执行层 ToolExecutor · 语义契约与执行通道解耦</text>
+  <text x="440" y="290" text-anchor="middle" font-size="12" fill="#BA7517" font-family="sans-serif">Precondition 硬校验 → 路由决策 → ToolAdapter 通道执行 → Effect 回写 + 遥测</text>
+
+  <rect x="60" y="328" width="180" height="48" rx="6" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="150" y="346" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A" font-family="sans-serif">legacy</text>
+  <text x="150" y="364" text-anchor="middle" font-size="11.5" fill="#5F5E5A" font-family="sans-serif">离线 Mock</text>
+
+  <rect x="255" y="328" width="180" height="48" rx="6" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="345" y="346" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A" font-family="sans-serif">sim</text>
+  <text x="345" y="364" text-anchor="middle" font-size="11.5" fill="#5F5E5A" font-family="sans-serif">硬件在环仿真</text>
+
+  <rect x="450" y="328" width="180" height="48" rx="6" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="540" y="346" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A" font-family="sans-serif">playback</text>
+  <text x="540" y="364" text-anchor="middle" font-size="11.5" fill="#5F5E5A" font-family="sans-serif">现场录播回放</text>
+
+  <rect x="645" y="328" width="175" height="48" rx="6" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="732" y="346" text-anchor="middle" font-size="13" font-weight="600" fill="#2C2C2A" font-family="sans-serif">ros2</text>
+  <text x="732" y="364" text-anchor="middle" font-size="11.5" fill="#5F5E5A" font-family="sans-serif">真机通道（骨架）</text>
+
+  <path d="M440 68 L440 92" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M180 144 L180 168" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M440 144 L440 168" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M700 144 L700 168" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M180 224 L180 240 L440 240 L440 248" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M440 224 L440 248" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M700 224 L700 240 L440 240 L440 248" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M150 304 L150 328" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M345 304 L345 328" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M540 304 L540 328" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+  <path d="M732 304 L732 328" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar)"/>
+</svg>
+<figcaption>图 1 &nbsp;系统分层架构。感知层把真实 3DGS 数据注入世界状态，是决策链路唯一的真实数据入口。</figcaption>
+</figure>
+
+<h3>2.1 双维度正交分配矩阵</h3>
+
+<p>系统的一个核心建模决定，是把「谁来做」与「在哪算」拆成两个<b>彼此正交</b>的维度，避免把物理平台与计算层级混为一谈。</p>
+
+<figure>
+<svg viewBox="0 0 880 260" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <text x="30" y="60" font-size="13" font-weight="600" fill="#444" font-family="sans-serif">物理平台</text>
+  <text x="30" y="78" font-size="11.5" fill="#666" font-family="sans-serif">Platform</text>
+
+  <text x="300" y="34" font-size="13" font-weight="600" fill="#444" font-family="sans-serif">UAV 无人机</text>
+  <text x="480" y="34" font-size="13" font-weight="600" fill="#444" font-family="sans-serif">DOG 机器狗</text>
+  <text x="660" y="34" font-size="13" font-weight="600" fill="#444" font-family="sans-serif">SHARED 协同算力</text>
+
+  <text x="150" y="112" font-size="13" font-weight="600" fill="#444" font-family="sans-serif">edge 边缘</text>
+  <text x="150" y="176" font-size="13" font-weight="600" fill="#444" font-family="sans-serif">cloud 云端</text>
+  <text x="150" y="240" font-size="13" font-weight="600" fill="#444" font-family="sans-serif">端侧 VLA</text>
+
+  <rect x="270" y="88" width="160" height="46" rx="5" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="350" y="105" text-anchor="middle" font-size="12" fill="#0C447C" font-family="sans-serif">高空航拍采集</text>
+  <text x="350" y="122" text-anchor="middle" font-size="11" fill="#185FA5" font-family="sans-serif">t3 camera · uav</text>
+
+  <rect x="450" y="88" width="160" height="46" rx="5" fill="#FAEEDA" stroke="#BA7517" stroke-width="1"/>
+  <text x="530" y="105" text-anchor="middle" font-size="12" fill="#633806" font-family="sans-serif">地面近距细查</text>
+  <text x="530" y="122" text-anchor="middle" font-size="11" fill="#BA7517" font-family="sans-serif">t4 camera · dog</text>
+
+  <rect x="630" y="88" width="160" height="46" rx="5" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="710" y="105" text-anchor="middle" font-size="12" fill="#3C3489" font-family="sans-serif">人脸脱敏</text>
+  <text x="710" y="122" text-anchor="middle" font-size="11" fill="#534AB7" font-family="sans-serif">t6 anonymize</text>
+
+  <rect x="270" y="152" width="160" height="46" rx="5" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+  <text x="350" y="175" text-anchor="middle" font-size="11.5" fill="#888" font-family="sans-serif">（极少）</text>
+
+  <rect x="450" y="152" width="160" height="46" rx="5" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+  <text x="530" y="175" text-anchor="middle" font-size="11.5" fill="#888" font-family="sans-serif">（极少）</text>
+
+  <rect x="630" y="152" width="160" height="46" rx="5" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="710" y="169" text-anchor="middle" font-size="12" fill="#3C3489" font-family="sans-serif">视频剪辑渲染</text>
+  <text x="710" y="186" text-anchor="middle" font-size="11" fill="#534AB7" font-family="sans-serif">t5 edit · cloud</text>
+
+  <rect x="270" y="216" width="160" height="40" rx="5" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="350" y="236" text-anchor="middle" font-size="11.5" fill="#0C447C" font-family="sans-serif">端侧视觉-语言-动作</text>
+
+  <rect x="450" y="216" width="160" height="40" rx="5" fill="#FAEEDA" stroke="#BA7517" stroke-width="1"/>
+  <text x="530" y="236" text-anchor="middle" font-size="11.5" fill="#633806" font-family="sans-serif">端侧导航控制</text>
+
+  <rect x="630" y="216" width="160" height="40" rx="5" fill="#F1EFE8" stroke="#B4B2A9" stroke-width="1"/>
+  <text x="710" y="236" text-anchor="middle" font-size="11.5" fill="#888" font-family="sans-serif">—</text>
+
+  <line x1="250" y1="60" x2="820" y2="60" stroke="#ddd" stroke-width="1"/>
+  <line x1="250" y1="60" x2="250" y2="256" stroke="#ddd" stroke-width="1"/>
+</svg>
+<figcaption>图 2 &nbsp;平台 × 层级正交分配矩阵。前者决定物理执行体，后者决定算力落点，二者独立取值。</figcaption>
+</figure>
+
+<h2>3. 关键技术</h2>
+
+<h3>3.1 长程规划与可恢复执行</h3>
+<p>规划层用 LangGraph 组织分解流程，产出结构化 <code>Plan</code>（子任务、依赖、工具提示、成功判据、平台）。决策层按 ReAct 范式逐步执行：每一步先做前置校验，再执行工具，最后把观测写回世界状态。</p>
+<p>失败时不是简单重试，而是走 <b>Reflexion</b> 归因：把失败症状映射为<b>失败层级</b>（planning / routing / execution / perception），生成可复用的经验条目，并在有上限的重规划中使用。这保证了长链条任务的失败是可解释、可收敛的。</p>
+
+<h3>3.2 端-边-云协同路由</h3>
+<p>每个工具在 <code>RouteHint</code> 中声明计算强度、时延预算、隐私等级与是否具备边缘执行能力。Router 结合 NetworkGovernor 提供的链路状态做选路，云端不可用时按 FallbackStrategy 下沉到边侧，并把降级开销计入时延度量。</p>
+<div class="box">
+  <div class="bt">诚实说明</div>
+  <p>链路 RTT 由 <code>random.uniform()</code> 生成，<b>不探测真实网络</b>；端侧 VLA 时延由连乘系数公式计算（MoE ×0.72、蒸馏 ×0.88、INT4 量化 ×0.85、FlashAttention ×0.92、PagedAttention ×0.94），<b>不是真实模型推理测量</b>。这两个模块当前只用于验证路由逻辑本身的正确性。</p>
+</div>
+
+<h3>3.3 空地物理平台建模</h3>
+<p>引入 <code>Platform</code> 枚举（UAV / DOG / SHARED），Planner 为每个子任务判定执行平台，<code>TraceStep</code> 逐步记录实际执行平台，前端按平台着色渲染 DAG。归一化函数 <code>normalize_platform()</code> 兼容中英文表述，未知表述回落 SHARED 以避免误判。</p>
+<p>实测中，真实大模型能正确把「航拍绝缘子」判给无人机、「巡查开关柜」判给机器狗，说明该维度在真实语义理解下是有效的。</p>
+
+<h3>3.4 执行通道抽象层（ToolAdapter）</h3>
+<p>这是本系统从 POC 走向生产的关键解耦。<code>ToolSpec</code> 承载<b>语义契约</b>（Precondition / Effect / Rollback / RouteHint），<code>ToolAdapter</code> 承载<b>执行通道</b>（如何真正做出来）。换真机只需替换 Adapter，Planner / Reasoner / Router / 评测<b>零改动</b>。</p>
+<table>
+  <tr><th style="width:14%">通道</th><th style="width:32%">语义</th><th>用途</th></tr>
+  <tr><td><code>legacy</code></td><td>直接调用工具逻辑，零耗时、必然成功</td><td>算法回归，保证既有行为不变</td></tr>
+  <tr><td><code>sim</code></td><td>真实墙钟耗时（可加速）、真实超时、可取消、遥测回传、故障注入</td><td>硬件在环仿真，暴露时序与状态类缺陷</td></tr>
+  <tr><td><code>playback</code></td><td>按 JSONL 现场记录回放真实时序</td><td>确定性复现现场问题</td></tr>
+  <tr><td><code>ros2</code></td><td>ROS2 action 映射骨架，rclpy 可选依赖</td><td>真机接入位（已留接口，未联调）</td></tr>
+</table>
+
+<h4>真机语义四要素</h4>
+<ul>
+  <li><b>真实墙钟耗时</b>：无人机相位建模为 自检→起飞→巡航→作业→返航→降落，受 <code>time_scale</code> 加速</li>
+  <li><b>真实超时</b>：默认 120s（该数值是仿真实测得出的：一次无人机架次约 47.5s，原 30s 会在返航相位误判超时）</li>
+  <li><b>可取消</b>：CancellationToken，取消后进入 <code>cancelled</code> 终止分支立即停机</li>
+  <li><b>遥测回传</b>：电量、里程、位置、链路、相位进度</li>
+</ul>
+
+<h3>3.5 真实感知层（3DGS 重建数据接入）</h3>
+<p>系统最初的感知是空缺的——<code>camera</code> 工具返回一个 uuid 假路径。本轮把实验室场景的 <b>3D Gaussian Splatting 重建产物</b>接入，使系统第一次拥有真实数据输入。</p>
+
+<figure>
+<svg viewBox="0 0 880 120" width="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round"/>
+    </marker>
+  </defs>
+  <rect x="20" y="38" width="150" height="46" rx="5" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1"/>
+  <text x="95" y="55" text-anchor="middle" font-size="12" font-weight="600" fill="#085041" font-family="sans-serif">3DGS 训练输出</text>
+  <text x="95" y="73" text-anchor="middle" font-size="11" fill="#0F6E56" font-family="sans-serif">栅格 / 点云 / 指标</text>
+
+  <rect x="205" y="38" width="150" height="46" rx="5" fill="#E6F1FB" stroke="#185FA5" stroke-width="1"/>
+  <text x="280" y="55" text-anchor="middle" font-size="12" font-weight="600" fill="#0C447C" font-family="sans-serif">SceneModel</text>
+  <text x="280" y="73" text-anchor="middle" font-size="11" fill="#185FA5" font-family="sans-serif">占据查询 / A* / 剖面</text>
+
+  <rect x="390" y="38" width="160" height="46" rx="5" fill="#FAEEDA" stroke="#BA7517" stroke-width="1"/>
+  <text x="470" y="55" text-anchor="middle" font-size="12" font-weight="600" fill="#633806" font-family="sans-serif">WorldState 真实事实</text>
+  <text x="470" y="73" text-anchor="middle" font-size="11" fill="#BA7517" font-family="sans-serif">scene_known_ratio 等</text>
+
+  <rect x="585" y="38" width="150" height="46" rx="5" fill="#EEEDFE" stroke="#534AB7" stroke-width="1"/>
+  <text x="660" y="55" text-anchor="middle" font-size="12" font-weight="600" fill="#3C3489" font-family="sans-serif">Precondition 判定</text>
+  <text x="660" y="73" text-anchor="middle" font-size="11" fill="#534AB7" font-family="sans-serif">基于真实数据</text>
+
+  <rect x="770" y="38" width="90" height="46" rx="5" fill="#F1EFE8" stroke="#5F5E5A" stroke-width="1"/>
+  <text x="815" y="61" text-anchor="middle" font-size="12" font-weight="600" fill="#2C2C2A" font-family="sans-serif">决策</text>
+
+  <path d="M170 61 L205 61" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar2)"/>
+  <path d="M355 61 L390 61" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar2)"/>
+  <path d="M550 61 L585 61" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar2)"/>
+  <path d="M735 61 L770 61" fill="none" stroke="#888" stroke-width="1.5" marker-end="url(#ar2)"/>
+</svg>
+<figcaption>图 3 &nbsp;感知数据闭环。3DGS 产物经 SceneModel 转为可计算结构，再以真实事实注入世界状态。</figcaption>
+</figure>
+
+<h4>四个真实感知工具</h4>
+<table>
+  <tr><th style="width:16%">工具</th><th style="width:40%">能力</th><th>是否真实计算</th></tr>
+  <tr><td><code>scene_inspect</code></td><td>场景规模、可通行/障碍/未知占比、重建质量</td><td><span class="tag t-real">是</span> 读取 metrics.json 与栅格统计</td></tr>
+  <tr><td><code>map_query</code></td><td>指定位置的可通行性及最近可通行点纠偏</td><td><span class="tag t-real">是</span> 真实占据栅格查询</td></tr>
+  <tr><td><code>route_plan</code></td><td>8 连通 A* 路径规划（禁穿墙角），返回真实里程</td><td><span class="tag t-real">是</span> 真实栅格上真实搜索</td></tr>
+  <tr><td><code>height_probe</code></td><td>点云高度剖面，判断净空或地面起伏</td><td><span class="tag t-real">是</span> 真实点云统计</td></tr>
+</table>
+
+<p><b>坐标系严格沿用原始构建脚本约定</b>：X-Z 为水平面、Y 为竖直轴，栅格索引 <code>occ[ix][iz]</code>，格心换算 <code>xmin + (ix+0.5)×res</code>。因此感知层输出的路径与原有导航管线完全对齐——在真实栅格上重跑 A* 得到 58 格，与原始 <code>build_nav.py</code> 导出的参考路径步数一致。</p>
+
+<h3>3.6 可观测性</h3>
+<p>后端以 SSE 流式下发事件（scene / planning / plan / select / progress / step / replan / reflexion / result / end），前端实时渲染分层 DAG、ReAct 轨迹、平台着色、遥测面板与评测指标，并支持运行中中止。感知层把真实栅格元数据一并下发，前端具备渲染真实地图的数据基础。</p>
+
+<h3>3.7 统一评测与失败归因</h3>
+<dl class="kv">
+  <dt>planning_success</dt><dd>计划是否成功产出且结构合法</dd>
+  <dt>action_reasonableness</dt><dd>动作与工具被调用的合理度</dd>
+  <dt>precondition_violations</dt><dd>前置校验违例次数</dd>
+  <dt>latency_p50/p95/p99</dt><dd>单步时延分布</dd>
+  <dt>end_to_end_ms</dt><dd>端到端总时延</dd>
+  <dt>csat</dt><dd>用户满意度（外部传入）</dd>
+  <dt>root_cause_layer</dt><dd>失败层级归因：planning / routing / execution / perception</dd>
+</dl>
+
+<h2>4. 解决的问题</h2>
+
+<p>下表列出系统在各阶段落地中<b>实际暴露并修复</b>的问题。其中标有「仿真暴露」的几项，在纯 Mock 模式下<b>永远无法被发现</b>——这正是硬件在环仿真层的工程价值所在。</p>
+
+<table>
+  <tr><th style="width:5%">#</th><th style="width:34%">问题</th><th style="width:36%">后果</th><th>修复</th></tr>
+  <tr><td>1</td><td>事件钩子误吞状态重置块</td><td>每次 emit 都清空计划，任务无法推进</td><td>重置逻辑移回构造函数</td></tr>
+  <tr><td>2</td><td>SSE 连接不关闭</td><td>前端一直卡在「运行中」</td><td>响应头 <code>Connection: close</code> + 收 end 事件即置位</td></tr>
+  <tr><td>3</td><td>端口残留多进程抢答</td><td>返回旧代码结果，调试误判</td><td>启动前 netstat 校验单实例</td></tr>
+  <tr><td>4</td><td><b>仿真暴露</b>：默认超时 30s 不足</td><td>无人机架次约 47.5s，在返航相位被误判超时</td><td>超时预算改为 120s</td></tr>
+  <tr><td>5</td><td><b>仿真暴露</b>：适配器忽略上下文超时预算</td><td>超时参数形同虚设</td><td>改用 <code>ctx.timeout_ms</code></td></tr>
+  <tr><td>6</td><td><b>仿真暴露</b>：只回传电量不回传语义 Effect</td><td>后续剪辑/脱敏被前置校验全线阻断，误触发 Reflexion</td><td>语义 Effect 与物理遥测合并回写</td></tr>
+  <tr><td>7</td><td><b>仿真暴露</b>：急停后仍继续重规划</td><td>安全事故风险，停机耗时约 95s</td><td>新增 <code>cancelled</code> 终止分支，停机降至 6.7s</td></tr>
+  <tr><td>8</td><td><b>真实跑测暴露</b>：仿真通道吞掉感知工具的真实计算结果</td><td>route_plan 明明被调用，最终却是 <code>route_len_m=0.0</code>、观测变成模板文本，感知层形同虚设</td><td>引入 <code>compute_only</code> 纯计算工具语义：先跑通道取时序（禁静态回写），再跑真实计算覆盖</td></tr>
+  <tr><td>9</td><td><b>Web 控制台暴露</b>：默认初始世界状态为空</td><td>打开页面点运行即失败：<code>safety_cleared</code> 缺失导致 camera 被硬阻断，2 次重规划后 Reflexion 收场</td><td>新增 <code>Orchestrator.DEFAULT_WS</code>，把「作业开始前已确认的现场条件」内建为默认值</td></tr>
+</table>
+
+<div class="box ok">
+  <div class="bt">第 8、9 项的额外意义</div>
+  <p>这两项是系统在「接上真实数据」和「接上真实用户入口」之后才暴露的。它们说明一个事实：<b>缺陷往往不在算法逻辑里，而在模块边界上</b>——纯计算工具与物理执行工具的语义差异、调用方与被调用方对初始条件的隐含假设。这类问题只有把系统真正跑起来才会出现。</p>
+</div>
+
+<h2>5. 性能与验证结果</h2>
+
+<h3>5.1 软件正确性与测试覆盖</h3>
+<table>
+  <tr><th style="width:26%">测试模块</th><th class="num" style="width:12%">用例数</th><th>覆盖内容</th></tr>
+  <tr><td>test_perception</td><td class="num">28</td><td>坐标转换、占据查询、连通性、A* 绕障、点云剖面、通道耦合回归</td></tr>
+  <tr><td>test_adapters</td><td class="num">17</td><td>四通道语义、超时、取消、故障注入、遥测与 Effect 回写</td></tr>
+  <tr><td>test_planner</td><td class="num">4</td><td>计划结构、目标对齐、平台判定</td></tr>
+  <tr><td>test_world_state</td><td class="num">4</td><td>条件判定、Effect 应用</td></tr>
+  <tr><td>test_eval / reasoner / router / executor</td><td class="num">3 × 4</td><td>评测归因、ReAct 流程、路由降级、执行器前置阻断</td></tr>
+  <tr><td><b>合计</b></td><td class="num"><b>65</b></td><td><b>65 / 65 全部通过</b> <span class="tag t-real">实测</span></td></tr>
+</table>
+
+<h3>5.2 真实大模型端到端巡检（实测）</h3>
+<p>配置：真实 gpt-5.5 规划 + 真实 3DGS 感知 + 硬件在环仿真执行（20× 加速）。任务为一次完整空地协同巡检。</p>
+<table>
+  <tr><th style="width:30%">指标</th><th class="num" style="width:18%">结果</th><th>说明</th></tr>
+  <tr><td>任务状态</td><td class="num">success</td><td>6 步全部完成，成功判据达成</td></tr>
+  <tr><td>动作合理度</td><td class="num">1.00</td><td>无不合理动作</td></tr>
+  <tr><td>前置校验违例</td><td class="num">0</td><td>全程未被阻断</td></tr>
+  <tr><td>单步时延 p50 / p95 / p99</td><td class="num">1182.9 / 2401.5 / 2404.0 ms</td><td>包含真实 LLM 网络往返</td></tr>
+  <tr><td>端到端时延</td><td class="num">7323.1 ms</td><td>不含被加速的仿真墙钟</td></tr>
+  <tr><td>CSAT</td><td class="num">4.5</td><td><span class="tag t-na">占位</span> 外部传入，非系统产出</td></tr>
+</table>
+
+<p><b>最关键的一项验证</b>：真实大模型在规划时<b>自主选用了感知工具</b>，把 <code>map_query</code> 与 <code>route_plan</code> 编入计划并真正调用，产出真实结果：</p>
+<pre>t1  map_query   dog  edge  位置 (-1.33, -2.32) -> 格 (14,16) 为「自由」，可通行
+t2  route_plan  dog  edge  A* 规划成功：58 格，真实里程 11.73m，途经未知区 0 格
+t3  camera      uav  edge  高空航拍采集完成：里程 +120m，剩余电量 84%
+t4  camera      dog  edge  地面近距细查完成：里程 +40m，剩余电量 94%
+t5  edit        shared cloud 云端剪辑渲染完成
+t6  anonymize   shared edge  边侧人脸脱敏完成</pre>
+<p>这意味着感知层不再是「接上了但没人用」的摆设，而是真正进入了决策链路。</p>
+
+<h3>5.3 真实 3DGS 场景数据（实测）</h3>
+<table>
+  <tr><th style="width:28%">项目</th><th class="num" style="width:24%">值</th><th>来源</th></tr>
+  <tr><td>占据栅格</td><td class="num">53 × 125 @ 0.2 m</td><td>nav_data.json <span class="tag t-real">实测</span></td></tr>
+  <tr><td>场景尺寸</td><td class="num">10.6 × 25.0 m</td><td>同上</td></tr>
+  <tr><td>可通行 / 障碍 / 未知</td><td class="num">559 / 2978 / 3088 格</td><td>同上</td></tr>
+  <tr><td>已知率</td><td class="num">53.4%</td><td>同上</td></tr>
+  <tr><td>重建质量 PSNR(test)</td><td class="num">28.06 dB</td><td>metrics.json <span class="tag t-real">实测</span></td></tr>
+  <tr><td>高斯数量 / 相机位姿</td><td class="num">387299 / 98</td><td>同上</td></tr>
+  <tr><td>A* 规划结果</td><td class="num">58 格 / 11.73 m</td><td>与原始导航管线参考路径一致 <span class="tag t-real">实测</span></td></tr>
+</table>
+
+<h3>5.4 硬件在环仿真实测</h3>
+<table>
+  <tr><th style="width:26%">项目</th><th class="num" style="width:26%">值</th><th>性质</th></tr>
+  <tr><td>无人机架次耗时</td><td class="num">47.5 s</td><td><span class="tag t-sim">推演</span> 相位行为模型</td></tr>
+  <tr><td>无人机架次耗电</td><td class="num">100% → 84%</td><td><span class="tag t-sim">推演</span> 能耗模型</td></tr>
+  <tr><td>机器狗巡检耗时 / 耗电</td><td class="num">47.7 s / → 94%</td><td><span class="tag t-sim">推演</span></td></tr>
+  <tr><td>急停响应</td><td class="num">95 s → 6.7 s</td><td><span class="tag t-real">实测</span> 软件响应，非真机停机</td></tr>
+  <tr><td>端侧 VLA 时延</td><td class="num">28.5 ms</td><td><span class="tag t-sim">推演</span> 连乘系数公式，非真实推理</td></tr>
+  <tr><td>链路 RTT</td><td class="num">—</td><td><span class="tag t-sim">推演</span> 随机数生成，不探测真实网络</td></tr>
+</table>
+
+<div class="box warn">
+  <div class="bt">必须澄清的一点</div>
+  <p>5.4 表中除「急停响应」外全部为<b>行为模型推演</b>。系统当前<b>没有任何一条真实机器人硬件的实测数据</b>。因此本系统的性能结论<b>不能</b>用于论证真机性能，只能用于论证软件正确性与方法设计的可行性。</p>
+</div>
+
+<h2>6. 业务就绪度评估</h2>
+
+<p>对「能否投入实际业务」给出分层判断，依据是证据强度而非功能完整度。</p>
+
+<table>
+  <tr><th style="width:22%">层面</th><th style="width:14%">状态</th><th>依据</th></tr>
+  <tr><td>软件正确性</td><td><b>就绪</b></td><td>65/65 测试通过，真实 LLM 端到端跑通，失败路径可归因可恢复</td></tr>
+  <tr><td>架构可扩展性</td><td><b>就绪</b></td><td>语义契约与执行通道解耦，换真机只换 Adapter，决策层零改动</td></tr>
+  <tr><td>感知数据基础</td><td><b>部分就绪</b></td><td>已有真实 3DGS 栅格与点云，但仅覆盖单一实验室场景，未见缺陷识别模型</td></tr>
+  <tr><td>执行能力</td><td><b>未就绪</b></td><td>11 个工具中仅 4 个为真实计算，其余为 Mock；无真机联调</td></tr>
+  <tr><td>端侧推理</td><td><b>未就绪</b></td><td>无真实 VLA 模型、无 INT4 量化、无推理引擎</td></tr>
+  <tr><td>安全联锁</td><td><b>未就绪</b></td><td><code>safety_cleared</code> 当前为内置默认值，真机必须由硬件安全回路真实写入</td></tr>
+  <tr><td>工程化</td><td><b>未就绪</b></td><td>无持久化、无鉴权、无审计、无高可用</td></tr>
+</table>
+
+<p><b>结论：当前是具备工程与方法价值的原型系统，尚不能直接承载实际业务。</b></p>
+
+<h2>7. 演进路线</h2>
+
+<table>
+  <tr><th style="width:10%">阶段</th><th style="width:22%">目标</th><th style="width:12%">状态</th><th>关键动作</th></tr>
+  <tr><td>A</td><td>硬件在环仿真</td><td><b>已完成</b></td><td>四通道抽象、真实时序与故障注入、暴露 7 类时序/状态缺陷</td></tr>
+  <tr><td>A+</td><td>真实感知接入</td><td><b>已完成</b></td><td>3DGS 占据栅格与点云接入，四个真实计算工具，经真实 LLM 验证被调用</td></tr>
+  <tr><td>B</td><td>单台真机接入</td><td>待启动</td><td>优先机器狗：用 ros2 通道替换 sim，打通导航与近距采集，标定真实时序与能耗</td></tr>
+  <tr><td>C</td><td>空地并行协同</td><td>待启动</td><td>Reasoner 当前串行取 <code>ready_nodes[0]</code>，需改为并行调度以发挥空地并行优势</td></tr>
+  <tr><td>D</td><td>真实端侧 VLA</td><td>待启动</td><td>接入 3B 模型与 INT4 量化推理，替换时延公式，实测时延分布</td></tr>
+  <tr><td>E</td><td>工程化与合规</td><td>待启动</td><td>安全联锁硬件化、持久化、鉴权审计、模型服务直连替换中转站</td></tr>
+</table>
+
+<h2>8. 结论</h2>
+
+<p>本系统完成了一套面向空地协同巡检的多智能体任务分配与边缘智能决策框架，在三个方向上取得了可验证的进展：</p>
+
+<ul>
+  <li><b>机制上杜绝了工具误调用</b>：以可判定的 Precondition / Effect 语义契约替代自然语言描述，执行前硬校验，实测中真实大模型全程 0 次违例、动作合理度 1.00。</li>
+  <li><b>解耦了 POC 与生产的最后一公里</b>：ToolAdapter 把语义契约与执行通道分离，换真机只换 Adapter，决策层零改动——这是此类系统从原型走向部署最容易卡死的环节。</li>
+  <li><b>第一次拥有了真实数据输入</b>：3DGS 重建产物经感知层注入世界状态，前置校验首次能判定基于真实数据的条件；真实大模型会自主选用并调用这些工具，感知层已真正参与决策。</li>
+</ul>
+
+<p>同时必须清醒认识其边界：<b>系统尚无真实硬件实测数据</b>，能耗、里程、端侧时延均为模型推演，安全联锁为内置默认值。它的当前价值在于「骨架正确、接口正确、可以长肉」，而非「可直接交付的产品」。</p>
+
+<p>真正使其产生业务价值的关键一步，不是继续堆叠功能，而是<b>接入单台真机（阶段 B）</b>——那将第一次把链路上的推演数字替换为实测数字，系统的性能论证才会真正成立。</p>
+
+<h2>附录 A &nbsp;技术栈</h2>
+<dl class="kv">
+  <dt>语言与运行时</dt><dd>Python 3.13 · conda 环境 agent</dd>
+  <dt>编排框架</dt><dd>LangGraph（规划层状态图）</dd>
+  <dt>数据契约</dt><dd>Pydantic v2（ToolSpec / Plan / TraceStep / EvalRecord）</dd>
+  <dt>模型接入</dt><dd>OpenAI 兼容接口（mock / langchain / openai 三后端）</dd>
+  <dt>执行通道</dt><dd>legacy / sim / playback / ros2（rclpy 可选依赖）</dd>
+  <dt>服务与前端</dt><dd>标准库 ThreadingHTTPServer + SSE · 原生 HTML/CSS/JS</dd>
+  <dt>感知数据源</dt><dd>3DGS 训练输出（占据栅格 / 点云 / 重建指标）</dd>
+  <dt>测试</dt><dd>pytest，65 例</dd>
+</dl>
+
+<h2>附录 B &nbsp;复现命令</h2>
+<pre># 全量测试（65 例）
+python -m pytest -q
+
+# 感知层能力演示（真实 3DGS 数据）
+python -m examples.demo_perception
+
+# 真实大模型端到端巡检（需配置 config/real_model.yaml，约 3~4 分钟）
+python -m examples.run_inspection
+
+# 启动 Web 控制台
+python server.py        # http://127.0.0.1:8777</pre>
+
+<div class="foot">
+  <p>空地协同无人巡检系统 · 多智能体任务分配与边缘智能决策系统 · 技术报告 v2</p>
+  <p>本报告所有标注为「实测」的数据均可在本机通过附录 B 命令复现；标注为「推演」的数据来自行为模型或公式计算，未经硬件验证；标注为「占位」的数据由外部传入。</p>
+</div>
+
+</div>
+</body>
+</html>

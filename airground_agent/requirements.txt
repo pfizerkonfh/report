@@ -1,0 +1,12 @@
+langgraph>=0.2.0
+langchain-core>=0.2.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+pyyaml>=6.0
+structlog>=24.1.0
+rich>=13.7.0
+# 可选：对接真实大模型（LangChain 后端）
+# langchain-openai>=0.1.0
+# 开发依赖
+pytest>=8.0
+pytest-cov>=4.0

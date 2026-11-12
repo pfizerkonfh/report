@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual envs
+.venv/
+venv/
+
+# Caches & artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Runtime artifacts
+logs/
+*.log
+data/experience_buffer.jsonl
+
+# 真实模型配置（含敏感 API Key，禁止提交）
+config/real_model.yaml
+.env
+*.local.yaml
+
+# Editor
+.idea/
+.vscode/

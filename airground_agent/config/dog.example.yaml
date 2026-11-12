@@ -1,0 +1,51 @@
+# 机器狗接入配置示例（ZSIBOT 轮式四足）
+# 用法：python -m airground_agent.dog.cli --config config/dog.example.yaml --goal "..." --emit mission.json
+# 真机下发再加 --send（会覆盖本文件的 dry_run）
+
+llm:
+  backend: mock          # 现场联调先用 mock 规划；接真实模型改成 openai 并配 base_url/api_key
+
+sim:
+  # legacy = 决策侧 Mock 执行，只用来产规划；zsibot = 机器狗子任务真实下发
+  mode: legacy
+
+dog:
+  # ---- 通道一：导航 WebSocket（狗端 alg_control_node）----
+  ws_uri: "ws://192.168.234.234:10010"
+  # ---- 通道二：动作通道（main_sdk.cpp 编译产物）----
+  # Ubuntu 现场：make 后得到 ./zsibot_control
+  daemon_exe: "./zsibot_control"
+  dog_ip: "192.168.234.1"
+  send_port: 8081
+  recv_port: 8080
+
+  # 安全阀：true 只生成/记录指令，不下发真机。确认无误后再改 false
+  dry_run: true
+
+  # 狗端定位地图 / 已录制路径（path_id 非空时走多点导航）
+  map_id: ""
+  path_id: ""
+  nav_mode: auto          # auto | waypoints | multi
+
+  # 执行参数
+  collect_seconds: 3.0    # 到位后采集窗口（秒）
+  nav_timeout_s: 120.0    # 单条导航超时（秒）
+  waypoint_stride_m: 1.0  # 航点抽稀间距（米）
+  max_waypoints: 40
+  heading_mode: along_path  # along_path | fixed | none
+  fixed_yaw_deg: 0.0
+  infer_approach: false   # 机器狗子任务未显式要求导航时的兜底开关
+
+  # ---- 坐标系标定：3DGS 世界系(X-Z水平,Y竖直) -> 狗地图系(X-Y水平,Z竖直) ----
+  # 现场用 ≥2 组同名点（如开关柜 A 角、门框）标定后填入；
+  # 也可用 FrameTransform.fit_from_point_pairs(world_pts, map_pts) 求解。
+  # 未标定（全 0）时只有轴映射，航点会以重建原点为原点 —— 不要直接上真机。
+  yaw_deg: 0.0
+  translate: [0.0, 0.0, 0.0]
+  scale: 1.0
+  flip_x: false
+  flip_y: false
+
+perception:
+  enabled: true
+  data_dir: ""            # 留空自动查找 exp/viewer/showcase_assets/nav_data.json

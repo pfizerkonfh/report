@@ -1,0 +1,30 @@
+request_id: design-20260930
+entry_type: full_pipeline
+current_stage: 3
+output_docx_path: "D:/buddy/空地协同/output/design-20260930/stage3/空地协同多智能体系统设计.docx"
+stages:
+  stage_0:
+    status: completed
+    note: "空地协同多智能体系统设计文档，聚焦项目背景第(4)目标，解决四个关键问题"
+  stage_1:
+    status: completed
+    output_path: "stage1/final_draft.md"
+    genre: general
+    expert_used: general-writer
+    route_tag: general_writing
+    critic_decision: skip
+  stage_2:
+    status: completed
+    route: html
+    html_sub: template
+    output_path: "stage2/formatted-design.html"
+    output_format: html
+  stage_3:
+    status: completed
+    executor: doc-converter
+    input_format: html
+    output_path: "stage3/空地协同多智能体系统设计.docx"
+    skill_used: ["html-to-docx"]
+    present_files_opened: true
+    fallback: false
+consistency_check: "S1->S2->S3 链路完整，docx 已生成并强制预览"

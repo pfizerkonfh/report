@@ -1,0 +1,1 @@
+Namespace(sh_degree=3, source_path='/data/KongFanhua/dataset/LLFF/ours', model_path='output/ours/exp', images='images', depths='', resolution=8, white_background=False, train_test_exp=False, data_device='cuda', eval=True)

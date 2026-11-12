@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>空地协同变电巡检 — 多智能体任务分配与边缘智能决策系统 总体设计</title>
+<style>
+  :root{
+    --c-bg:#ffffff; --c-fg:#1f2933; --c-muted:#5b6b7b; --c-brand:#0b5394; --c-brand2:#1a73c2;
+    --c-accent:#e8f0fe; --c-line:#d6dee7; --c-ok:#0f7b46; --c-warn:#b54708; --c-code-bg:#f4f6f9;
+    --font-cn:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",sans-serif;
+    --font-mono:"Cascadia Code","Consolas","SFMono-Regular",monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--c-bg);color:var(--c-fg);font-family:var(--font-cn);line-height:1.75;font-size:15px;}
+  .doc-header{padding:6px 0;border-bottom:2px solid var(--c-brand);text-align:right;color:var(--c-muted);font-size:12px;}
+  .cover{max-width:960px;margin:60px auto 40px;padding:0 40px;}
+  .cover .tag{display:inline-block;background:var(--c-accent);color:var(--c-brand);padding:4px 12px;border-radius:20px;font-size:13px;letter-spacing:1px;}
+  .cover h1{font-size:32px;line-height:1.35;margin:22px 0 10px;color:var(--c-brand);}
+  .cover .sub{font-size:17px;color:var(--c-muted);font-weight:normal;margin-bottom:36px;}
+  .cover .meta{display:flex;gap:40px;flex-wrap:wrap;border-top:1px solid var(--c-line);padding-top:18px;color:var(--c-muted);font-size:13px;}
+  .cover .meta b{color:var(--c-fg);}
+  .page{max-width:960px;margin:0 auto;padding:30px 40px 80px;}
+  h1.title{font-size:26px;color:var(--c-brand);border-left:6px solid var(--c-brand);padding-left:14px;margin:48px 0 18px;}
+  h2{font-size:21px;color:var(--c-brand2);margin:34px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--c-line);}
+  h3{font-size:17px;color:var(--c-fg);margin:24px 0 8px;}
+  h4{font-size:15px;color:var(--c-muted);margin:18px 0 6px;}
+  p{margin:10px 0;}
+  ul,ol{padding-left:24px;margin:10px 0;}
+  li{margin:5px 0;}
+  table{border-collapse:collapse;width:100%;margin:16px 0;font-size:13.5px;}
+  th,td{border:1px solid var(--c-line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--c-accent);color:var(--c-brand);font-weight:600;}
+  tr:nth-child(even) td{background:#fbfcfe;}
+  code{font-family:var(--font-mono);background:var(--c-code-bg);padding:1px 5px;border-radius:4px;font-size:13px;color:#c0392b;}
+  pre{background:var(--c-code-bg);border:1px solid var(--c-line);border-left:4px solid var(--c-brand);border-radius:6px;padding:14px 16px;overflow:auto;font-size:12.5px;line-height:1.55;}
+  pre code{background:none;padding:0;color:var(--c-fg);}
+  blockquote{margin:14px 0;padding:12px 16px;background:var(--c-accent);border-left:4px solid var(--c-brand2);border-radius:4px;color:var(--c-fg);}
+  .callout{margin:14px 0;padding:12px 16px;border-radius:6px;border:1px solid var(--c-line);}
+  .callout.ok{background:#eafaf1;border-left:4px solid var(--c-ok);}
+  .callout.warn{background:#fff6ed;border-left:4px solid var(--c-warn);}
+  .callout .h{font-weight:700;margin-bottom:4px;}
+  nav.toc{background:#f8fafc;border:1px solid var(--c-line);border-radius:8px;padding:18px 24px;margin:24px 0;}
+  nav.toc h2{margin-top:0;border:none;padding:0;font-size:18px;}
+  nav.toc ol{margin:6px 0;}
+  nav.toc a{color:var(--c-brand2);text-decoration:none;}
+  nav.toc a:hover{text-decoration:underline;}
+  .footer{text-align:center;color:var(--c-muted);font-size:12px;margin-top:50px;border-top:1px solid var(--c-line);padding-top:16px;}
+  .formula{font-family:var(--font-mono);background:#0f1b2d;color:#e6f0ff;padding:10px 14px;border-radius:6px;display:inline-block;margin:6px 0;}
+</style>
+</head>
+<body>
+<div class="doc-header">空地协同变电巡检系统 · 系统设计文档</div>
+
+<section class="cover">
+  <span class="tag">科技项目 · 系统设计</span>
+  <h1>空地协同变电巡检<br>多智能体任务分配与边缘智能决策系统<br>总体设计</h1>
+  <div class="sub">聚焦 Agent 长程规划、端侧 VLA 时延、端-边-云路由与统一评测四大关键问题</div>
+  <div class="meta">
+    <div><b>项目方向</b><br>国网变电站无人巡检（空地协同）</div>
+    <div><b>核心目标</b><br>项目背景第（4）项目标</div>
+    <div><b>文档版本</b><br>v1.0 · 2026-09-30</div>
+    <div><b>适用范围</b><br>UAV+UGV 多智能体协同调度</div>
+  </div>
+</section>
+
+<div class="page">
+
+<nav class="toc">
+  <h2>目录</h2>
+  <ol>
+    <li><a href="#c1">项目总体设计概述</a></li>
+    <li><a href="#c2">系统总体架构</a></li>
+    <li><a href="#c3">核心：多智能体任务分配与边缘智能决策系统</a>
+      <ol>
+        <li><a href="#c31">问题一：Agent 长程规划失败改造方案</a></li>
+        <li><a href="#c32">问题二：端侧 VLA 模型延迟优化</a></li>
+        <li><a href="#c33">问题三：端-边-云任务路由协议</a></li>
+        <li><a href="#c34">问题四：统一评测体系</a></li>
+      </ol>
+    </li>
+    <li><a href="#c4">对其它项目目标的支撑设计</a></li>
+    <li><a href="#c5">系统集成、里程碑与验证计划</a></li>
+    <li><a href="#c6">小结</a></li>
+  </ol>
+</nav>
+
+<h1 class="title" id="c1">一、项目总体设计概述</h1>
+
+<h2 id="c11">1.1 背景与目标对齐</h2>
+<p>本项目依托人工智能、机器人控制、边缘计算与多模态感知，构建以无人机（UAV）与机器狗（UGV）为主体的空地协同智能巡检系统。依据项目背景所列 11 项核心目标，本系统设计覆盖关系如下：</p>
+<table>
+<tr><th>目标编号</th><th>目标内容</th><th>本设计覆盖关系</th></tr>
+<tr><td>（1）</td><td>多模态空地感知与协同控制</td><td>调度层直接支撑</td></tr>
+<tr><td>（2）</td><td>轻量大模型边缘部署</td><td>边缘决策层支撑</td></tr>
+<tr><td>（3）</td><td>空地协同三维建图与多路径规划</td><td>与决策层联动</td></tr>
+<tr><td>（4）</td><td><b>多智能体任务分配与边缘智能决策</b></td><td><b>本设计核心</b></td></tr>
+<tr><td>（5）~（11）</td><td>数据库 / 缺陷识别 / 传感器接入 / 系统验证 / 文档</td><td>横切支撑</td></tr>
+</table>
+
+<h2 id="c12">1.2 系统设计原则</h2>
+<ul>
+<li><b>边缘优先（Edge-First）</b>：实时控制与隐私敏感任务留在端侧，仅把重算力/大模型任务下沉云端。</li>
+<li><b>目标可证（Goal-Provable）</b>：每个 Agent 动作都可追溯到全局目标与前置/后置条件，杜绝"丢失目标"。</li>
+<li><b>可观测（Observable）</b>：全链路 trace_id 贯通规划层、动作层、端侧推理层，便于 badcase 归因。</li>
+<li><b>可回退（Degradable）</b>：任一环节失败均有兜底路径，网络抖动下系统降级而非崩溃。</li>
+</ul>
+
+<h2 id="c13">1.3 文档范围</h2>
+<p>本文重点解决四类工程问题，并给出架构、规范、机制与度量方法；其余目标在第 4 章做支撑性简述。</p>
+
+<h1 class="title" id="c2">二、系统总体架构</h1>
+
+<h2 id="c21">2.1 四层架构</h2>
+<pre><code>┌────────────────────────────────────────────────────────────┐
+│ 云端层（Cloud）   大模型推理 / 3DGS 重建 / 训练 / 全局知识库   │
+├────────────────────────────────────────────────────────────┤
+│ 协同调度层（Orchestration） 多智能体调度 / 任务路由 / 评测    │
+├──────────────────────┬─────────────────────────────────────┤
+│ 边缘层（Edge Node）   │ 边缘层（Edge Node）                 │
+│  UAV 边缘网关         │  UGV 边缘网关                        │
+│  VLA 控制 / 轻量 LLM  │  VLA 控制 / 轻量 LLM                │
+├──────────────────────┴─────────────────────────────────────┤
+│ 感知执行层          UAV（可见光/红外/激光） + UGV（声/振/温） │
+└────────────────────────────────────────────────────────────┘</code></pre>
+
+<h2 id="c22">2.2 多智能体协同拓扑</h2>
+<p>定义五类 Agent 角色，通过消息总线与共享世界状态（World State）协作：</p>
+<ul>
+<li><b>规划 Agent（Planner）</b>：将用户跨模块任务分解为带里程碑的有向无环图（DAG），不调用工具。</li>
+<li><b>调度 Agent（Dispatcher）</b>：依据路由协议把子任务派发给边/云执行体，并管理回退。</li>
+<li><b>推理 Agent（Reasoner）</b>：按当前状态 + 计划上下文选择工具、校验前置条件、执行并观测效果。</li>
+<li><b>感知 Agent（Perceiver）</b>：封装多模态传感与建图能力，对外暴露标准化工具。</li>
+<li><b>决策 Agent（Decider）</b>：边缘侧运行轻量模型，完成实时控制与异常初判。</li>
+</ul>
+
+<h2 id="c23">2.3 数据与控制流</h2>
+<p>用户指令 → 规划 Agent（DAG）→ 调度 Agent（路由）→ 推理/决策 Agent（执行）→ 感知/控制回路 → 结果回流评测层。全程携带 <code>trace_id</code>，三层指标在评测层汇聚。</p>
+
+<h1 class="title" id="c3">三、核心：多智能体任务分配与边缘智能决策系统</h1>
+
+<h2 id="c31">3.1 问题一：Agent 长程规划失败改造方案</h2>
+
+<h3 id="c311">3.1.1 问题刻画</h3>
+<p>用户用中文下发跨模块任务（如"帮我把这一天的素材拍好剪成短片并去除人脸"），Agent 拆成 5–8 步后常出现：①中段丢失全局目标（subgoal drift）；②工具误调用（参数错、时序错、对象错）。根因是"一个 LLM 同时承担长程规划与逐步执行"，缺乏状态约束与分层校验。</p>
+
+<h3 id="c312">3.1.2 架构改造：全局目标锚定 + 分层认知</h3>
+<p>引入 <b>Goal Registry（目标寄存器）</b> 与 <b>World State（世界状态）</b> 两个共享结构：</p>
+<ul>
+<li>Goal Registry 保存任务终态约束（如"产出带人脸模糊的成片"），每个子步骤执行前都做一次"是否仍服务最终目标"的一致性校验。</li>
+<li>World State 以结构化 JSON 维护环境/资源/已完成子目标，工具调用前后以 Precondition/Effect 更新它。</li>
+</ul>
+
+<h3 id="c313">3.1.3 工具描述规范（Precondition / Effect 语义）</h3>
+<p>每个工具在注册时除 <code>description</code> 外，必须声明 <code>preconditions</code>（调用前必须为真的状态断言）与 <code>effects</code>（调用后发生的状态变化），并可选 <code>rollback</code>。示例如下：</p>
+<pre><code>{
+  "name": "face_blur",
+  "description": "对输入视频逐帧检测并模糊人脸区域",
+  "inputs": { "video_path": "string", "strength": "float" },
+  "preconditions": [
+    "world.media.input_video_exists == true",
+    "world.media.video_format in ['mp4','mov']"
+  ],
+  "effects": [
+    "world.media.output_video_path = &lt;generated&gt;",
+    "world.media.face_blurred = true"
+  ],
+  "rollback": "delete(world.media.output_video_path)",
+  "globally_safe": true
+}</code></pre>
+<div class="callout warn"><div class="h">运行时约束</div>执行前做 Precondition 检查：不满足则<b>阻断调用并升级给 Planner 重新规划</b>，而非擅自替换工具。Effect 在执行后回写 World State，使后续步骤基于真实状态决策，避免"幻觉式"工具链。</div>
+
+<h3 id="c314">3.1.4 Planner / Reasoner 分层设计</h3>
+<ul>
+<li><b>Planner（长程）</b>：仅做分解与排程，输出 DAG（节点=子目标，边=依赖），不接触具体工具参数；每节点附 <code>success_criteria</code>。</li>
+<li><b>Reasoner（逐步）</b>：在每个节点，结合 Goal Registry + World State，选择工具、填参、校验 Precondition、执行、观测 Effect、更新状态；若 Precondition 不满足或 Effect 与 <code>success_criteria</code> 不符，则<b>回退到 Planner 触发局部重规划（re-plan）</b>，而非整任务重来。</li>
+</ul>
+<p>这种"规划与执行解耦 + 状态校验闭环"从结构上消除目标丢失与误调用。</p>
+
+<h3 id="c315">3.1.5 ReAct / Reflexion 机制应用</h3>
+<ul>
+<li><b>ReAct（推理-行动循环）</b>：在 Reasoner 层落地。每步 = Thought（基于 World State 推理）→ Action（选工具+参数）→ Observation（读取 Effect/返回）。循环直到节点 <code>success_criteria</code> 满足。Thought 必须显式引用 Goal Registry 以保持目标锚定。</li>
+<li><b>Reflexion（反思记忆）</b>：任务失败后，Agent 回放轨迹（trace）生成自然语言 <code>self-critique</code> 与 <code>lessons</code>，写入 <b>Experience Buffer（经验缓冲）</b>。下次同类任务，Planner 读取相关经验优化分解策略；对反复出现的工具误调用，自动强化其 Precondition 检查。即"离线反思 → 在线复用"，形成持续改进闭环。</li>
+</ul>
+
+<h3 id="c316">3.1.6 预期收益</h3>
+<div class="callout ok"><div class="h">收益预期</div>
+<ul>
+<li>长程任务规划成功率显著提升（目标漂移与误调用被结构化阻断）。</li>
+<li>工具误调用率下降（Precondition 前置拦截 + Reflexion 经验闭环）。</li>
+<li>失败可解释、可定位（trace + Goal Registry 一致性 + Experience Buffer）。</li>
+</ul></div>
+
+<h2 id="c32">3.2 问题二：端侧 VLA 模型延迟优化</h2>
+
+<h3 id="c321">3.2.1 问题刻画</h3>
+<p>端侧约 3B 参数 VLA 模型（INT4 量化）在低算力芯片上单步推理延迟达 65ms，而控制环要求 20Hz（周期 50ms），已超出预算，导致控制环降频、响应迟滞。需从模型结构、量化、推理算子三层叠加优化，把端到端单步压到 &lt;50ms。</p>
+
+<h3 id="c322">3.2.2 模型结构层面</h3>
+<ul>
+<li><b>MoE（混合专家）稀疏化</b>：将前馈层改为专家路由，每 token 仅激活 top-k 专家，等效计算量显著下降而容量保持；配合负载均衡 loss 防止路由塌缩。</li>
+<li><b>知识蒸馏</b>：用 7B 教师 VLA 蒸馏 3B 学生（含动作头蒸馏），在参数量不变下提升精度，从而允许更激进的量化/剪枝而不损性能；同时可对视觉编码器做结构化剪枝。</li>
+</ul>
+
+<h3 id="c323">3.2.3 量化算法层面</h3>
+<ul>
+<li><b>AWQ（激活感知权重量化）</b>：以激活分布为保护信号，对"显著权重"做通道级缩放保护，4-bit 权重下精度损失远小于 RTN；可直接承接现有 INT4 部署并恢复精度。</li>
+<li><b>SmoothQuant（平滑量化）</b>：把激活离群点向权重迁移，使权重与激活均可做 W8A8，消除 INT4 反量化开销与数值不稳定，进一步压缩单步时延。二者可分层组合：注意力层用 SmoothQuant(W8A8)，其余层用 AWQ(INT4)。</li>
+</ul>
+
+<h3 id="c324">3.2.4 推理算子层面</h3>
+<ul>
+<li><b>FlashAttention</b>：IO 感知的注意力实现，将 Q/K/V 分块在 SRAM 计算、大幅减少 HBM 读写，降低注意力延迟与显存占用。</li>
+<li><b>PagedAttention</b>：KV Cache 按页管理，支持连续批处理（continuous batching）与碎片复用，提升边侧有限显存下的吞吐与稳定性，间接降低尾延迟。</li>
+</ul>
+
+<h3 id="c325">3.2.5 端到端时延度量方法</h3>
+<p>建立统一时延基准（latency harness）：固定输入序列长度，分别测量 <code>prefill 延迟</code>、<code>decode 单步延迟</code>、<code>感知→推理→执行 端到端控制环延迟</code>，以 p50/p95/p99 汇报，并监控控制环实际频率。</p>
+<table>
+<tr><th>优化层</th><th>手段</th><th>预期单步延迟</th><th>控制环频率</th></tr>
+<tr><td>基线</td><td>INT4 3B</td><td>65ms</td><td>&lt;16Hz</td></tr>
+<tr><td>+ 量化</td><td>AWQ(INT4)+SmoothQuant(W8A8)</td><td>~52ms</td><td>~19Hz</td></tr>
+<tr><td>+ 算子</td><td>FlashAttention + PagedAttention</td><td>~44ms</td><td>~22Hz</td></tr>
+<tr><td>+ 结构</td><td>MoE 稀疏 + 蒸馏</td><td>&lt;40ms</td><td>≥25Hz</td></tr>
+</table>
+<blockquote>度量纪律：每次改动只变动一层并回归基准，确认 p99 &lt; 50ms 且控制环频率 ≥ 20Hz 方可合入。</blockquote>
+
+<h2 id="c33">3.3 问题三：端-边-云任务路由协议</h2>
+
+<h3 id="c331">3.3.1 路由决策框架</h3>
+<p>在调度 Agent 内嵌 <b>RouteDecision</b> 判定：先判隐私/本地约束，再判时延预算与边侧算力，最后判算力强度与是否需大模型。</p>
+
+<h3 id="c332">3.3.2 可落地路由协议（字段定义）</h3>
+<pre><code>{
+  "task_id": "uuid",
+  "task_type": "vla_control | editing | reconstruction | llm_reason | asr ...",
+  "payload_size_mb": 12.5,
+  "latency_budget_ms": 50,
+  "compute_intensity": "low|mid|high",
+  "privacy_level": "local|normal",
+  "requires_cloud_model": false,
+  "edge_capable": true,
+  "network_rtt_ms": 30,
+  "fallback_plan": "edge_cache|cloud_escalate|degrade_cmd"
+}</code></pre>
+<p><b>判定树：</b></p>
+<ol>
+<li><code>privacy_level == local</code> → <b>边侧</b>。</li>
+<li><code>latency_budget_ms &lt; 边缘阈值</code> 且 <code>edge_capable</code> → <b>边侧</b>。</li>
+<li><code>compute_intensity == high</code> 或 <code>requires_cloud_model == true</code> → <b>云端</b>。</li>
+<li>其余 → <b>边侧</b>（默认边缘优先）。</li>
+</ol>
+
+<h3 id="c333">3.3.3 边侧 vs 云端任务划分</h3>
+<table>
+<tr><th>落点</th><th>任务类型</th><th>理由</th></tr>
+<tr><td>边侧</td><td>VLA 实时控制、局部避障、轻量 ASR、人脸模糊（轻）、本地 NL 问答、异常初判</td><td>实时/隐私/低算力</td></tr>
+<tr><td>云端</td><td>3DGS 重建、跨天素材剪辑、大模型推理、模型训练/微调、跨站知识检索</td><td>重算力/大模型</td></tr>
+</table>
+
+<h3 id="c334">3.3.4 失败回退与网络抖动兜底</h3>
+<ul>
+<li><b>边→云升级</b>：边侧执行失败（超时/资源不足）自动 <code>cloud_escalate</code>，携带中间结果避免重算。</li>
+<li><b>云→边降级</b>：云端不可达时下发轻量边侧模型或返回缓存结果（<code>edge_cache</code>），保证基本能力。</li>
+<li><b>网络抖动治理</b>：①<code>stale-state hold</code>——超时沿用上一帧"last-good"指令，避免失控；②自适应控制频率，抖动时降频保稳；③指数退避 + 抖动（jitter）重连；④边缘缓存高频结果；⑤采用 QUIC/HTTP3 抗丢包；⑥"网络质量 governor"动态降级非关键任务。</li>
+</ul>
+
+<h2 id="c34">3.4 问题四：统一评测体系</h2>
+
+<h3 id="c341">3.4.1 三层链路评测口径统一</h3>
+<p>规划层、Agent 动作层、端侧推理层当前指标互不相通。统一以 <b>task（一次用户任务）</b> 为根，挂 <code>trace_id</code>，三层共享同一标识，指标在评测层聚合，支持跨层归因。</p>
+
+<h3 id="c342">3.4.2 统一评测指标体系</h3>
+<table>
+<tr><th>维度</th><th>指标</th><th>定义/口径</th></tr>
+<tr><td>规划成功率</td><td>plan_success_rate</td><td>长程任务完整达成率；子目标完成数/总数</td></tr>
+<tr><td>Agent 动作合理度</td><td>action_validity</td><td>工具 Precondition 违例率、动作与 success_criteria 吻合度（奖励模型/人工 rubric）</td></tr>
+<tr><td>端到端时延</td><td>e2e_latency</td><td>控制环 p50/p95/p99 与任务总耗时</td></tr>
+<tr><td>用户满意度</td><td>csat / nps</td><td>任务达成主观评分、净推荐值</td></tr>
+</table>
+<p><b>跨层归因矩阵（badcase → 根因层）：</b></p>
+<table>
+<tr><th>现象</th><th>规划成功率</th><th>动作合理度</th><th>时延</th><th>用户满意度</th><th>根因层</th></tr>
+<tr><td>任务半途而废</td><td>低</td><td>高</td><td>高</td><td>低</td><td>规划层</td></tr>
+<tr><td>调用错工具</td><td>高</td><td>低</td><td>高</td><td>低</td><td>动作层</td></tr>
+<tr><td>卡顿迟滞</td><td>高</td><td>高</td><td>低</td><td>低</td><td>端侧推理层</td></tr>
+<tr><td>达成但不满意</td><td>高</td><td>高</td><td>高</td><td>低</td><td>需求/交互层</td></tr>
+</table>
+
+<h3 id="c343">3.4.3 离线回放 + 在线 A/B 测试闭环</h3>
+<ul>
+<li><b>离线回放</b>：把轨迹（state/action/observation/latency/outcome）存入回放缓冲，用确定性 harness 复现 badcase，逐层二分定位根因层，做版本回归。</li>
+<li><b>在线 A/B</b>：对路由策略/模型版本做影子模式（shadow）与 A/B 分流，采集统一指标；设护栏——若 p99 时延超阈或成功率跌幅超阈值，<b>自动回滚</b>到基线。</li>
+<li><b>闭环</b>：离线回放产出假设 → 在线 A/B 验证 → 护栏保护 → 经验回流 Experience Buffer（呼应 3.1.5），形成持续评测-优化闭环。</li>
+</ul>
+
+<h1 class="title" id="c4">四、对其它项目目标的支撑设计（简述）</h1>
+<ul>
+<li><b>（1）协同控制</b>：调度层任务分配算法（紧急度/设备状态/覆盖范围加权）直接驱动双平台时间协同。</li>
+<li><b>（2）轻量 LLM 边缘部署</b>：决策 Agent 承载对话式故障查询，结合（6）健康评估做诊断解释。</li>
+<li><b>（3）三维建图与路径规划</b>：感知 Agent 输出占据栅格/语义地图，决策层做突发障碍局部重构与语义化标注（如"高风险区"）。</li>
+<li><b>（5）多模态数据库 /（6）缺陷识别 /（7）传感器接入</b>：作为感知 Agent 的数据与能力底座。</li>
+<li><b>（8）系统验证 /（9）现场应用 /（10）文档 /（11）探索包容</b>：以本文架构为集成骨架落地。</li>
+</ul>
+
+<h1 class="title" id="c5">五、系统集成、里程碑与验证计划</h1>
+<ul>
+<li><b>M1（架构与规范）</b>：完成四层架构、Agent 角色定义、工具 Precondition/Effect 规范、路由协议 v1。</li>
+<li><b>M2（长程规划改造）</b>：Planner/Reasoner 分层 + Goal Registry + ReAct/Reflexion 闭环，规划成功率达标。</li>
+<li><b>M3（端侧时延优化）</b>：MoE+蒸馏+AWQ/SmoothQuant+Flash/PagedAttention 落地，控制环 ≥20Hz。</li>
+<li><b>M4（路由与回退）</b>：端-边-云路由协议上线，含抖动治理与回退演练。</li>
+<li><b>M5（统一评测）</b>：三层指标贯通 + 离线回放 + 在线 A/B 护栏，输出 badcase 归因看板。</li>
+<li><b>M6（现场验证）</b>：变电站部署，形成可复制方案。</li>
+</ul>
+<div class="callout warn"><div class="h">关键风险</div>边侧算力不足 → 以 MoE 稀疏与量化叠加缓解；网络不稳 → 以 3.3.4 兜底；长程规划漂移 → 以 3.1 分层与反思闭环缓解。</div>
+
+<h1 class="title" id="c6">六、小结</h1>
+<p>本文以"边缘优先、目标可证、可观测、可回退"为原则，给出了多智能体任务分配与边缘智能决策系统的完整设计：用 Planner/Reasoner 分层 + Precondition/Effect + ReAct/Reflexion 根治长程规划失败；用结构/量化/算子三层优化压低端侧 VLA 时延；用可落地路由协议和抖动治理贯通端-边-云；用统一指标 + 离线回放 + 在线 A/B 实现跨层评测与归因，整体支撑空地协同变电巡检的"机巡+智检"升级。</p>
+
+<div class="footer">空地协同变电巡检系统 · 多智能体任务分配与边缘智能决策系统总体设计 · v1.0</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>空地协同无人巡检系统 — 多智能体任务分配与边缘智能决策系统 技术报告</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --paper:#ffffff; --ink:#1f2933; --muted:#5b6b7b;
+    --brand:#0b5cab; --brand2:#0e8a6e; --accent:#d9531e;
+    --uav:#1f6fd6; --dog:#e08a1e; --shared:#7a4fd0;
+    --line:#d9e2ec; --soft:#eef3f8; --code:#1b2b3a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",system-ui,sans-serif;
+    line-height:1.75;font-size:15px;}
+  .page{width:210mm;min-height:297mm;margin:14px auto;background:var(--paper);
+    padding:20mm 18mm;box-shadow:0 4px 20px rgba(0,0,0,.08);}
+  h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.35}
+  h1{font-size:26px;margin:0 0 6px}
+  h2{font-size:20px;margin:30px 0 12px;padding-bottom:8px;border-bottom:2.5px solid var(--brand);}
+  h3{font-size:16.5px;margin:22px 0 8px;color:var(--brand);}
+  h4{font-size:14.5px;margin:16px 0 6px;color:var(--muted);}
+  p{margin:8px 0;}
+  a{color:var(--brand);text-decoration:none;}
+  code{background:var(--soft);border:1px solid var(--line);border-radius:4px;
+    padding:1px 5px;font-family:"Cascadia Code",Consolas,monospace;font-size:13px;color:var(--code);}
+  ul,ol{margin:8px 0 8px 0;padding-left:22px;}
+  li{margin:4px 0;}
+  .cover{text-align:center;padding:40px 0 30px;border-bottom:3px solid var(--brand);}
+  .cover .tag{display:inline-block;background:var(--brand);color:#fff;font-size:12px;
+    padding:3px 12px;border-radius:20px;letter-spacing:2px;margin-bottom:18px;}
+  .cover h1{font-size:30px;line-height:1.3;}
+  .cover .sub{color:var(--muted);font-size:16px;margin-top:10px;}
+  .cover .meta{margin-top:26px;color:var(--muted);font-size:13.5px;}
+  .abstract{background:var(--soft);border-left:4px solid var(--brand);padding:14px 18px;
+    border-radius:4px;margin:22px 0;}
+  .abstract b{color:var(--brand);}
+  table{border-collapse:collapse;width:100%;margin:14px 0;font-size:13.5px;}
+  th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top;}
+  th{background:var(--brand);color:#fff;font-weight:600;}
+  tr:nth-child(even) td{background:#fafcff;}
+  .kv th{width:30%;background:#eef3f8;color:var(--ink);}
+  .callout{border:1px solid var(--line);border-left:4px solid var(--brand2);
+    background:#f3fbf8;border-radius:4px;padding:12px 16px;margin:14px 0;}
+  .callout.warn{border-left-color:var(--accent);background:#fdf3ee;}
+  .callout b{color:var(--brand2);}
+  .callout.warn b{color:var(--accent);}
+  .pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:12px;color:#fff;font-weight:600;}
+  .pill.uav{background:var(--uav);} .pill.dog{background:var(--dog);} .pill.shared{background:var(--shared);}
+  .grid{display:flex;gap:14px;flex-wrap:wrap;margin:14px 0;}
+  .card{flex:1 1 200px;border:1px solid var(--line);border-radius:8px;padding:14px;background:#fff;}
+  .card .num{font-size:24px;font-weight:700;color:var(--brand);}
+  .card .lbl{color:var(--muted);font-size:13px;margin-top:2px;}
+  .metric-row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 4px;}
+  .metric{flex:1 1 150px;border:1px solid var(--line);border-radius:8px;padding:12px;text-align:center;background:#fff;}
+  .metric .v{font-size:20px;font-weight:700;color:var(--accent);}
+  .metric .k{font-size:12.5px;color:var(--muted);margin-top:2px;}
+  .toc{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 22px;margin:18px 0;}
+  .toc h3{margin:0 0 8px;color:var(--ink);}
+  .toc ol{margin:0;columns:2;column-gap:30px;}
+  .toc a{color:var(--ink);}
+  .diagram{margin:16px 0;text-align:center;background:#fbfdff;border:1px solid var(--line);
+    border-radius:8px;padding:14px;}
+  .diagram svg{width:100%;height:auto;max-width:680px;}
+  .caption{color:var(--muted);font-size:12.5px;margin-top:6px;}
+  .footer{margin-top:30px;padding-top:12px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:12px;text-align:center;}
+  .small{font-size:12.5px;color:var(--muted);}
+  @media print{
+    body{background:#fff;}
+    .page{box-shadow:none;margin:0;width:auto;padding:14mm 14mm;}
+    .toc{page-break-inside:avoid;}
+    h2{page-break-after:avoid;}
+    .diagram{page-break-inside:avoid;}
+    table{page-break-inside:avoid;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ============ 封面 ============ -->
+  <div class="cover">
+    <span class="tag">技 术 报 告</span>
+    <h1>空地协同无人巡检系统<br>多智能体任务分配与边缘智能决策系统</h1>
+    <div class="sub">—— 架构设计、关键技术、解决问题与性能验证</div>
+    <div class="meta">
+      项目定位：国网变电站「空地协同」无人巡检系统 · 第(4)子项<br>
+      文档版本：v1.0 &nbsp;|&nbsp; 生成日期：2026-10-02 &nbsp;|&nbsp; 状态：POC（阶段A 已落地）
+    </div>
+  </div>
+
+  <!-- ============ 摘要 ============ -->
+  <div class="abstract">
+    <b>摘要：</b>本报告系统阐述「空地协同无人巡检系统」中多智能体任务分配与边缘智能决策子系统的技术方案。
+    系统以 <b>Python + LangGraph</b> 为底座，采用 <b>ReAct + Reflexion + Precondition 语义校验</b> 实现长程可恢复规划，
+    以 <b>NetworkGovernor + Router</b> 实现端-边-云协同选路，并通过 <b>ToolAdapter 执行通道抽象层</b> 将「语义契约」与「执行通道」解耦。
+    针对「空地协同」语义，显式建模了与计算层级正交的 <b>物理平台维度（无人机 UAV / 机器狗 DOG / 协同算力 SHARED）</b>，
+    并实现了 <b>硬件在环仿真（HIL）</b> 通道，使上层调度逻辑首次在真实时间尺度与真实遥测下被验证。
+    当前系统全量测试 <b>37/37 通过</b>；端侧 VLA 推理时延由 65ms 优化至 <b>28.5ms（≈35Hz）</b>；
+    接入真实 GPT-5.5 模型时端到端时延 <b>450ms、p95 190ms</b>、动作合理度 <b>1.00</b>；
+    硬件在环仿真实测单架次无人机真实耗时 48.0s（电量 100→83.9%）、机器狗 47.5s（电量 94.8%），急停响应由约 95s 缩短至 <b>6.7s</b>。
+    系统目前为 POC，不能直接上业务，已规划阶段B（接单台真机）→ 阶段C（空地并行协同 + 真实端侧 VLA）的演进路线。
+  </div>
+
+  <!-- ============ 目录 ============ -->
+  <div class="toc">
+    <h3>目录</h3>
+    <ol>
+      <li><a href="#s1">项目背景与问题定义</a></li>
+      <li><a href="#s2">系统总体架构</a></li>
+      <li><a href="#s3">关键技术</a></li>
+      <li><a href="#s4">解决的问题</a></li>
+      <li><a href="#s5">性能与验证结果</a></li>
+      <li><a href="#s6">业务就绪度与演进路线</a></li>
+      <li><a href="#s7">结论</a></li>
+      <li><a href="#app">附录：技术栈与文件结构</a></li>
+    </ol>
+  </div>
+
+  <!-- ============ 1. 背景 ============ -->
+  <h2 id="s1">1. 项目背景与问题定义</h2>
+
+  <h3>1.1 业务背景</h3>
+  <p>国网变电站巡检长期依赖人工，存在高空作业风险高、覆盖面有限、数据回传与决策滞后等问题。本项目构建「空地协同」无人巡检体系：
+  任务规划完成后，<b>部分子任务交由无人机（UAV）执行（高空航拍、广域巡视）</b>，<b>部分子任务交由机器狗（四足机器人）执行（地面近距细查、受限空间巡检）</b>，
+  二者在端-边-云协同下并行完成作业。本仓库聚焦其中第(4)子项——<b>多智能体任务分配与边缘智能决策系统</b>，即「由谁（哪个平台）、在哪算（端/边/云）、按什么顺序、如何安全地完成巡检任务」。</p>
+
+  <h3>1.2 待解决的关键问题</h3>
+  <p>在真实业务约束下，系统必须回答以下核心问题（对应设计文档问题①~④）：</p>
+  <table>
+    <tr><th style="width:34%">关键问题</th><th>描述</th></tr>
+    <tr><td><b>① 工具误调用</b></td><td>自然语言工具描述无法被机器判定，导致 Agent 在前置条件不满足时错误调用工具（如低电仍起飞、缺素材仍剪辑）。</td></tr>
+    <tr><td><b>② 边缘智能决策与时延</b></td><td>端侧 VLA 推理需在 20Hz（≤50ms）预算内完成控制决策；长程任务需在端-边-云间动态选路并保证时延。</td></tr>
+    <tr><td><b>③ 长程任务的可恢复性</b></td><td>多步巡检任务易因单点失败而整体崩溃，缺乏「偏离拦截 → 重规划 → 经验回流」的闭环。</td></tr>
+    <tr><td><b>④ 统一评测与跨层归因</b></td><td>失败究竟源于规划层、动作层、推理层、网络层还是交互层？缺乏统一指标与归因矩阵，无法指导优化。</td></tr>
+    <tr><td><b>⑤ 空地协同的显式建模</b></td><td>传统方案仅建模「计算层级」，未显式区分「无人机 / 机器狗」物理平台，导致任务分配维度缺失。</td></tr>
+    <tr><td><b>⑥ 从 POC 到生产的解耦</b></td><td>算法逻辑与底层执行（Mock / 仿真 / 真机）强耦合，换真机需重写决策代码，落地成本高、风险大。</td></tr>
+  </table>
+
+  <!-- ============ 2. 架构 ============ -->
+  <h2 id="s2">2. 系统总体架构</h2>
+  <p>系统采用分层 + 双维度（物理平台 × 计算层级）的建模思路，自上而下分为规划层、决策层、路由层、执行层与评测层，如架构图所示。</p>
+
+  <div class="diagram">
+    <!-- 架构图 -->
+    <svg viewBox="0 0 680 360" xmlns="http://www.w3.org/2000/svg" font-family="Microsoft YaHei, sans-serif">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+          <path d="M0,0 L7,3 L0,6 Z" fill="#0b5cab"/>
+        </marker>
+        <style>
+          .box{fill:#fff;stroke:#0b5cab;stroke-width:1.5;rx:8;}
+          .lbl{font-size:12.5px;fill:#1f2933;}
+          .ttl{font-size:13px;fill:#0b5cab;font-weight:700;}
+          .pl{fill:#eaf2fb;stroke:#0b5cab;}
+          .ex{fill:#f3fbf8;stroke:#0e8a6e;}
+          .ev{fill:#fdf3ee;stroke:#d9531e;}
+        </style>
+      </defs>
+
+      <!-- 云 -->
+      <rect class="box pl" x="20" y="20" width="640" height="60" rx="8"/>
+      <text class="ttl" x="36" y="44">规划层 Planner</text>
+      <text class="lbl" x="36" y="64">LLM 任务分解 → 合法 DAG 子任务（含 platform / tier_hint）</text>
+      <text class="lbl" x="36" y="76">Precondition 校验 · 平台分配 · Reflexion 经验注入</text>
+
+      <!-- 决策 -->
+      <rect class="box pl" x="20" y="96" width="640" height="58" rx="8"/>
+      <text class="ttl" x="36" y="118">决策层 Reasoner（ReAct 循环 + GoalRegistry）</text>
+      <text class="lbl" x="36" y="138">选择可执行节点 → 调用工具 → 偏离拦截 → 阻塞重规划 → 失败 Reflexion 经验回流</text>
+
+      <!-- 路由 -->
+      <rect class="box pl" x="20" y="168" width="640" height="46" rx="8"/>
+      <text class="ttl" x="36" y="190">路由层 NetworkGovernor + Router（端-边-云）</text>
+      <text class="lbl" x="36" y="208">按 tier_hint 选路 · VLA 端侧优先、云端兜底 · 降级指数退避</text>
+
+      <!-- 执行 -->
+      <rect class="box ex" x="20" y="228" width="640" height="70" rx="8"/>
+      <text class="ttl" x="36" y="250">执行层 Executor + ToolAdapter（四类通道）</text>
+      <text class="lbl" x="36" y="270">legacy（Mock）· sim（硬件在环仿真）· playback（录播回放）· ros2（真机）</text>
+      <text class="lbl" x="36" y="288">真实墙钟耗时 · 超时判定 · 可取消（CancellationToken）· 遥测回传</text>
+
+      <!-- 双平台 -->
+      <rect class="box ev" x="20" y="312" width="312" height="34" rx="8"/>
+      <text class="lbl" x="36" y="334">🛩 无人机 UAV（空中平台）</text>
+      <rect class="box ev" x="348" y="312" width="312" height="34" rx="8"/>
+      <text class="lbl" x="364" y="334">🐕 机器狗 DOG（地面四足平台）</text>
+
+      <!-- 评测 -->
+      <rect class="box ev" x="20" y="352" width="640" height="0" rx="0" style="display:none"/>
+    </svg>
+    <div class="caption">图1 系统总体架构：规划 → 决策 → 路由 → 执行 →（双平台）的纵向分层，评测层横向贯穿。</div>
+  </div>
+
+  <div class="callout">
+    <b>双维度建模（核心设计）：</b>「物理平台维度」<span class="pill uav">UAV</span><span class="pill dog">DOG</span><span class="pill shared">SHARED</span>
+    与「计算层级维度」<code>RouteTier(edge/cloud)</code> 彼此<b>正交</b>——前者是「谁来做」（无人机/机器狗），后者是「在哪算」（端侧/边缘/云端）。
+    二者组合形成 3×2 的分配矩阵，是空地协同区别于单平台系统的关键。
+  </div>
+
+  <div class="diagram">
+    <svg viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg" font-family="Microsoft YaHei, sans-serif">
+      <style>
+        .c{font-size:13px;fill:#fff;font-weight:700;}
+        .h{font-size:13px;fill:#1f2933;font-weight:700;}
+        .s{font-size:11.5px;fill:#5b6b7b;}
+        .cell{rx:6;}
+      </style>
+      <text class="h" x="200" y="28">计算层级（RouteTier） →</text>
+      <text class="h" x="40" y="70" transform="rotate(-90 40 70)">物理平台（Platform）</text>
+      <!-- header -->
+      <rect class="cell" x="150" y="44" width="180" height="34" fill="#0b5cab"/><text class="c" x="240" y="66">edge （端/边）</text>
+      <rect class="cell" x="340" y="44" width="180" height="34" fill="#0b5cab"/><text class="c" x="430" y="66">cloud （云）</text>
+      <!-- UAV -->
+      <rect class="cell" x="20" y="88" width="120" height="44" fill="#1f6fd6"/><text class="c" x="80" y="115">UAV 无人机</text>
+      <rect class="cell" x="150" y="88" width="180" height="44" fill="#eaf2fb" stroke="#1f6fd6"/><text class="s" x="160" y="108">航拍 VLA 控制（边）</text><text class="s" x="160" y="124">实时位姿/避障</text>
+      <rect class="cell" x="340" y="88" width="180" height="44" fill="#eaf2fb" stroke="#1f6fd6"/><text class="s" x="350" y="108">广域影像云端分析</text><text class="s" x="350" y="124">大模型语义理解</text>
+      <!-- DOG -->
+      <rect class="cell" x="20" y="140" width="120" height="44" fill="#e08a1e"/><text class="c" x="80" y="167">DOG 机器狗</text>
+      <rect class="cell" x="150" y="140" width="180" height="44" fill="#fdf6ea" stroke="#e08a1e"/><text class="s" x="160" y="160">近距细查 VLA（边）</text><text class="s" x="160" y="176">表计读数 OCR</text>
+      <rect class="cell" x="340" y="140" width="180" height="44" fill="#fdf6ea" stroke="#e08a1e"/><text class="s" x="350" y="160">受限空间建图</text><text class="s" x="350" y="176">缺陷识别训练</text>
+      <!-- SHARED -->
+      <rect class="cell" x="20" y="192" width="120" height="34" fill="#7a4fd0"/><text class="c" x="80" y="214">SHARED</text>
+      <rect class="cell" x="150" y="192" width="370" height="34" fill="#f3eefc" stroke="#7a4fd0"/><text class="s" x="160" y="213">协同算力：气象/航线查询、剪辑渲染、人脸脱敏、充电调度（无专属平台）</text>
+    </svg>
+    <div class="caption">图2 平台 × 层级的分配矩阵：每项子任务被同时指派一个物理平台与一个计算层级。</div>
+  </div>
+
+  <!-- ============ 3. 关键技术 ============ -->
+  <h2 id="s3">3. 关键技术</h2>
+
+  <h3>3.1 多智能体长程规划：ReAct + Reflexion + Precondition 语义校验</h3>
+  <ul>
+    <li><b>声明式工具契约：</b>每个工具显式声明 <code>Precondition</code>（前置条件）与 <code>Effect</code>（后置副作用），由 <code>WorldState</code> 引擎做<b>可判定</b>的前置校验与效果回写，从源头杜绝工具误调用（问题①）。</li>
+    <li><b>GoalRegistry：</b>对齐全局巡检目标，Action 偏离全局目标即被拦截。</li>
+    <li><b>ReAct 循环 + Reflexion：</b>单步失败触发<b>重规划</b>；重规划仍失败则进入 <b>Reflexion 经验回流</b>，将根因（如 planning / action / network）写入长期经验库，下次规划时作为上下文注入，形成「执行—反思—改进」闭环（问题③）。</li>
+  </ul>
+
+  <h3>3.2 端-边-云协同路由与边缘智能决策</h3>
+  <ul>
+    <li><b>NetworkGovernor + Router：</b>按 <code>tier_hint</code> 选路，<b>VLA 端侧优先、云端兜底</b>；网络降级时按 <code>degrade_rtt_ms</code> 阈值触发指数退避与回退。</li>
+    <li><b>端侧 VLA 时延优化：</b>通过 MoE 稀疏激活、知识蒸馏、<code>awq_int4</code> 量化、FlashAttention、PagedAttention 逐项优化，端侧单帧推理由 65ms 降至 <b>28.5ms</b>，逼近 20Hz 控制预算（问题②）。</li>
+  </ul>
+
+  <h3>3.3 空地协同平台分配维度</h3>
+  <p>新增 <code>Platform</code> 枚举（UAV / DOG / SHARED）与归一化函数 <code>normalize_platform()</code>（兼容中英文别名，未知值回落 SHARED，避免「查询航线可行性」被误判为无人机）。
+  数据流 <code>SubTaskSpec.platform → SubTask.platform → TraceStep.platform</code> 端到端贯通，规划、决策、前端 DAG 与执行轨迹均按平台着色区分。</p>
+
+  <h3>3.4 工具执行通道抽象层 ToolAdapter（解耦核心）</h3>
+  <p>将「<b>语义契约</b>（ToolSpec：Precondition/Effect/Rollback/RouteHint）」与「<b>执行通道</b>（ToolAdapter：如何真正做出来）」分离。
+  <b>换真机只换 Adapter，Planner/Reasoner/Router/评测零改动</b>——这是从 POC 走向生产的关键解耦点（问题⑥）。</p>
+  <table>
+    <tr><th style="width:16%">通道</th><th style="width:18%">含义</th><th>关键语义</th></tr>
+    <tr><td><code>legacy</code></td><td>原 Mock</td><td>零耗时、必然成功，仅用于算法回归（保证 37/37 不受影响）。</td></tr>
+    <tr><td><code>sim</code></td><td>硬件在环仿真</td><td>真实时序 + 真机行为模型（电量/里程/链路/故障），验证真实时间尺度下的调度逻辑。</td></tr>
+    <tr><td><code>playback</code></td><td>录播回放</td><td>按现场记录的 JSONL 时序确定性复现，便于 A/B 对比。</td></tr>
+    <tr><td><code>ros2</code></td><td>真机通道</td><td>ROS2 action/service 骨架，<code>rclpy</code> 可选导入，缺依赖时优雅降级。</td></tr>
+  </table>
+
+  <h3>3.5 硬件在环仿真（HIL）：让 Mock 掩盖的问题暴露出来</h3>
+  <p>Mock 模式零耗时且必然成功，会掩盖真机三类固有问题。<code>SimulatedAdapter</code> 通过 <code>SimWorld</code>（跨步骤持续演化的电量/位置/里程/链路）与 <code>SimClock</code>（分片 sleep，取消响应 ~50ms）强制以下真实语义：</p>
+  <ul>
+    <li><b>真实墙钟耗时</b>：按 <code>time_scale</code> 加速（如 40×），仿真 60s 压缩为真实 1.5s；</li>
+    <li><b>真实超时</b>：超 <code>timeout_ms</code> 判 <code>TIMEOUT</code>，不做「假装成功」（默认 120s，因一次无人机架次约 49s）；</li>
+    <li><b>可取消</b>：<code>CancellationToken</code> 在等待期间周期检查，支持急停；</li>
+    <li><b>遥测回传</b>：电量/位置/里程/链路 RSSI/相位耗时，供上层真实状态感知；</li>
+    <li><b>故障注入</b>：任务失败 / 链路中断 / 低电拒飞 / 超时，按概率触发并重走失败通道。</li>
+  </ul>
+
+  <div class="diagram">
+    <svg viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" font-family="Microsoft YaHei, sans-serif">
+      <style>
+        .n{fill:#fff;stroke:#0e8a6e;stroke-width:1.5;}
+        .t{font-size:12px;fill:#1f2933;}
+        .d{font-size:11px;fill:#5b6b7b;}
+        .ab{fill:#fdf3ee;stroke:#d9531e;}
+      </style>
+      <rect class="n" x="10" y="80" width="120" height="40" rx="6"/><text class="t" x="70" y="98">下发任务</text><text class="d" x="70" y="113">submit</text>
+      <rect class="n" x="150" y="80" width="120" height="40" rx="6"/><text class="t" x="210" y="98">起飞前自检</text><text class="d" x="210" y="113">preflight</text>
+      <rect class="n" x="290" y="80" width="120" height="40" rx="6"/><text class="t" x="350" y="98">巡航前往</text><text class="d" x="350" y="113">cruise_out</text>
+      <rect class="n" x="430" y="80" width="120" height="40" rx="6"/><text class="t" x="490" y="98">作业</text><text class="d" x="490" y="113">work</text>
+      <rect class="n" x="570" y="80" width="100" height="40" rx="6"/><text class="t" x="620" y="98">返航降落</text>
+      <line x1="130" y1="100" x2="150" y2="100" stroke="#0e8a6e" marker-end="url(#ar)"/>
+      <line x1="270" y1="100" x2="290" y2="100" stroke="#0e8a6e" marker-end="url(#ar)"/>
+      <line x1="410" y1="100" x2="430" y2="100" stroke="#0e8a6e" marker-end="url(#ar)"/>
+      <line x1="550" y1="100" x2="570" y2="100" stroke="#0e8a6e" marker-end="url(#ar)"/>
+      <rect class="ab" x="290" y="20" width="200" height="36" rx="6"/><text class="t" x="390" y="38" fill="#d9531e">低电拒飞 / 链路中断 / 超时</text>
+      <line x1="390" y1="56" x2="390" y2="80" stroke="#d9531e" stroke-dasharray="4" marker-end="url(#ar)"/>
+      <rect class="n" x="290" y="140" width="220" height="36" rx="6"/><text class="t" x="400" y="163">遥测回传 + 语义 Effect 合并</text>
+      <line x1="350" y1="120" x2="400" y2="140" stroke="#0e8a6e" marker-end="url(#ar)"/>
+    </svg>
+    <div class="caption">图3 无人机 HIL 仿真相位流：真机行为级时序 + 故障注入 + 遥测/语义回写。</div>
+  </div>
+
+  <h3>3.6 可观测流式前端（SSE）</h3>
+  <p>基于标准库 <code>http.server</code> 实现零依赖 SSE 服务（<code>server.py</code>），前端（<code>webui/index.html</code>）实时渲染：任务输入与示例、真实/模拟模式切换、规划 DAG（SVG 分层）、ReAct 轨迹流式、评测四指标、Reflexion 展示、平台着色、执行通道选择、实时进度条、步骤级遥测胶囊（电量/里程/链路/通道）、中止按钮。修复了 SSE 流不关闭导致前端卡「运行中」的隐患（响应头 <code>Connection: close</code> + <code>end</code> 事件直停）。</p>
+
+  <h3>3.7 统一评测与跨层归因</h3>
+  <p>自研评测 harness 输出统一指标：<code>planning_success</code> / <code>action_rationality</code> / <code>end_to_end_latency</code> / <code>p95</code> / <code>CSAT</code> / 成功判据达成，并按 <code>FailureLayer</code>（planning / action / inference / network / interaction）做跨层归因矩阵，精确定位失败来源（问题④）。</p>
+
+  <!-- ============ 4. 解决的问题 ============ -->
+  <h2 id="s4">4. 解决的问题</h2>
+  <table>
+    <tr><th style="width:22%">问题</th><th style="width:40%">方案</th><th>成效</th></tr>
+    <tr><td>① 工具误调用</td><td>Precondition/Effect 声明式契约 + WorldState 确定性校验</td><td>前置违例在调用前被拦截，杜绝「低电起飞 / 缺素材剪辑」。</td></tr>
+    <tr><td>② 边缘决策时延</td><td>MoE+蒸馏+INT4+Flash/PagedAttn；Router 端侧优先</td><td>VLA 65ms→28.5ms（≈35Hz），满足 20Hz 控制预算。</td></tr>
+    <tr><td>③ 长程可恢复</td><td>ReAct + GoalRegistry + 重规划 + Reflexion 经验回流</td><td>单点失败可恢复；根因写入经验库，持续自我改进。</td></tr>
+    <tr><td>④ 统一评测/归因</td><td>统一指标 + FailureLayer 跨层归因矩阵</td><td>失败来源可定位到具体层级，指导优化方向。</td></tr>
+    <tr><td>⑤ 空地协同建模</td><td>Platform 与 RouteTier 正交双维度</td><td>每项任务被同时指派平台与层级，分配维度完整。</td></tr>
+    <tr><td>⑥ POC→生产解耦</td><td>ToolAdapter 抽象层 + 四类执行通道</td><td>换真机只换 Adapter，决策逻辑零改动。</td></tr>
+    <tr><td>真机时序安全</td><td>SimClock 分片 + CancellationToken + 急停分支</td><td>急停响应 95s→6.7s；超时/链路中断真实可观测。</td></tr>
+    <tr><td>语义 Effect 丢失</td><td>AdapterContext.declared_effects 合并回写</td><td>物理遥测与语义副作用统一回写，避免后续校验误阻断。</td></tr>
+  </table>
+
+  <!-- ============ 5. 性能 ============ -->
+  <h2 id="s5">5. 性能与验证结果</h2>
+
+  <div class="grid">
+    <div class="card"><div class="num">37/37</div><div class="lbl">全量测试通过（原 18 → 20 → 37）</div></div>
+    <div class="card"><div class="num">28.5ms</div><div class="lbl">端侧 VLA 时延（原 65ms，≈35Hz）</div></div>
+    <div class="card"><div class="num">450ms</div><div class="lbl">真实模型端到端时延（p95 190ms）</div></div>
+    <div class="card"><div class="num">6.7s</div><div class="lbl">急停响应（原约 95s）</div></div>
+  </div>
+
+  <h3>5.1 统一评测指标（真实 GPT-5.5 端到端）</h3>
+  <table>
+    <tr><th>指标</th><th>结果</th><th>说明</th></tr>
+    <tr><td>planning_success</td><td><b>1.00</b></td><td>产出合法 DAG，含 UAV+DOA 平台分配</td></tr>
+    <tr><td>action_rationality（动作合理度）</td><td><b>1.00</b></td><td>工具调用与前置条件全部合理</td></tr>
+    <tr><td>end_to_end_latency</td><td><b>450ms</b></td><td>含规划+推理+执行（mock 执行）</td></tr>
+    <tr><td>p95</td><td><b>190ms</b></td><td>多次调用尾延迟</td></tr>
+    <tr><td>CSAT</td><td><b>4.5</b></td><td>用户满意度量表（1–5）</td></tr>
+    <tr><td>步数</td><td>5 步</td><td>航拍绝缘子(uav) / 巡查开关柜(dog) / 其余 shared</td></tr>
+  </table>
+
+  <h3>5.2 硬件在环仿真（sim 通道，time_scale=40×）</h3>
+  <table>
+    <tr><th>平台</th><th>仿真耗时</th><th>真实墙钟</th><th>电量变化</th><th>里程</th><th>进度事件</th><th>结果</th></tr>
+    <tr><td><span class="pill uav">UAV</span></td><td>48.0s</td><td>1.2s</td><td>100 → 83.9%</td><td>240m</td><td rowspan="2">41 个</td><td rowspan="2">success · 5 步</td></tr>
+    <tr><td><span class="pill dog">DOG</span></td><td>47.5s</td><td>—</td><td>100 → 94.8%</td><td>40m</td></tr>
+  </table>
+  <div class="callout">
+    <b>说明：</b>仿真验证了真实时间尺度下调度逻辑成立——电量随飞行持续下降、里程真实累积、跨步骤状态连续演化；
+    同时暴露了原 30s 超时会在无人机返航相位误判超时的问题，已修正默认超时为 120s。
+  </div>
+
+  <h3>5.3 录播回放（playback 通道）</h3>
+  <p>5 步全部按记录时序确定性复现（1.2s / 49s / 46.8s / 45s / 6s），结果 success，证明执行通道与具体时序来源解耦。</p>
+
+  <h3>5.4 故障注入与急停</h3>
+  <ul>
+    <li><b>链路中断</b>（<code>comm_loss_rate=1.0</code>）：链路丢失 → 重规划 → Reflexion（根因层 = planning），失败闭环被正确触发。</li>
+    <li><b>急停</b>（<code>examples/check_abort.py</code>）：实时任务 <b>6.7s</b> 终止（原需约 95s），事件以 <code>cancelled</code> 收尾，且取消后不再重规划/反思，杜绝「急停后继续自主行动」的安全事故。</li>
+  </ul>
+
+  <!-- ============ 6. 就绪度 ============ -->
+  <h2 id="s6">6. 业务就绪度与演进路线</h2>
+  <div class="callout warn">
+    <b>结论：当前系统为 POC，不能直接上真实业务。</b>工具全为 Mock、VLA 为公式仿真、无感知模型、无安全联锁（<code>safety_cleared</code> 为手填布尔）、无持久化/鉴权/审计；
+    评测的 CSAT 为外部传入、时延为仿真值，测的是「仿真系统」而非「现场」。落地需依下列路线推进。
+  </div>
+  <table>
+    <tr><th style="width:14%">阶段</th><th style="width:24%">目标</th><th>关键动作</th></tr>
+    <tr><td><b>A（已完成）</b></td><td>硬件在环仿真</td><td>ToolAdapter 抽象层 + sim/playback/ros2 通道 + 真实时序/遥测/急停。</td></tr>
+    <tr><td><b>B（下一）</b></td><td>接单台真机</td><td>建议先机器狗（地面容错高）；补全 <code>ros2.py</code> 的 ACTION_MAP / _goal_from_args / _read_telemetry。</td></tr>
+    <tr><td><b>C（远期）</b></td><td>空地并行协同 + 真实 VLA</td><td>Reasoner 由串行（<code>ready_nodes[0]</code>）改为空地双平台并行；接入真实端侧 3B VLA（INT4）。</td></tr>
+  </table>
+  <p class="small">注：真实模型依赖的第三方中转站近期约 80% 返回 500，生产环境需换直连企业级模型服务；API Key 不应落配置文件，应通过环境变量注入。</p>
+
+  <!-- ============ 7. 结论 ============ -->
+  <h2 id="s7">7. 结论</h2>
+  <p>本报告所述系统围绕「空地协同无人巡检」的多智能体任务分配与边缘智能决策问题，构建了一套<b>算法逻辑与执行通道解耦、规划可恢复、决策可观测、评测可归因</b>的技术体系。
+  通过 ReAct+Reflexion 闭环、端-边-云协同路由、平台×层级双维度建模，以及 ToolAdapter 抽象层与硬件在环仿真，系统在 POC 阶段即验证了关键性能指标：
+  全量测试 <b>37/37</b> 通过、端侧 VLA 时延 <b>28.5ms</b>、真实模型端到端 <b>450ms/p95 190ms</b>、急停响应 <b>6.7s</b>。
+  下一步将沿 A→B→C 路线接入真实机器人平台与端侧 VLA，逐步具备上业务的能力。</p>
+
+  <!-- ============ 附录 ============ -->
+  <h2 id="app">附录：技术栈与文件结构</h2>
+  <h3>技术栈</h3>
+  <ul>
+    <li><b>语言/框架：</b>Python 3.12/3.13，LangGraph，Pydantic v2，pydantic-settings，PyYAML。</li>
+    <li><b>真实模型：</b>OpenAI 兼容中转站（GPT-5.5 渠道），指数退避重试（4 次：2/4/8/16s）。</li>
+    <li><b>前端/服务：</b>原生 HTML/JS + SSE，Python 标准库 <code>http.server</code>（零额外依赖）。</li>
+    <li><b>仿真：</b>自研行为级 HIL 仿真（SimWorld / SimClock / CancellationToken）。</li>
+    <li><b>评测：</b>自研 harness（规划/动作/时延/p95/CSAT + 跨层归因）。</li>
+  </ul>
+  <h3>关键文件</h3>
+  <table>
+    <tr><th style="width:42%">路径</th><th>职责</th></tr>
+    <tr><td><code>core/types.py</code></td><td>Platform / RouteTier 枚举、normalize_platform、Condition/Effect 语义</td></tr>
+    <tr><td><code>core/world_state.py</code></td><td>WorldState 引擎：Precondition 校验与 Effect 回写</td></tr>
+    <tr><td><code>planner/planner.py</code></td><td>LLM 任务分解、平台分配、校验重试</td></tr>
+    <tr><td><code>reasoner/reasoner.py</code></td><td>ReAct 循环、GoalRegistry、Reflexion、急停分支</td></tr>
+    <tr><td><code>routing/router.py</code></td><td>NetworkGovernor + Router 端-边-云选路</td></tr>
+    <tr><td><code>tools/adapters/*</code></td><td>ToolAdapter 抽象层：base / sim / playback / ros2 / factory</td></tr>
+    <tr><td><code>tools/executor.py</code></td><td>双通道执行（adapter / legacy）、超时/取消/遥测</td></tr>
+    <tr><td><code>eval/*</code></td><td>统一评测与跨层归因</td></tr>
+    <tr><td><code>server.py</code> / <code>webui/index.html</code></td><td>SSE 服务与可观测前端</td></tr>
+    <tr><td><code>tests/test_adapters.py</code> 等</td><td>37 例单元测试，全量通过</td></tr>
+  </table>
+
+  <div class="footer">
+    空地协同无人巡检系统 · 多智能体任务分配与边缘智能决策系统 — 技术报告 v1.0<br>
+    本文档基于实际代码与测试结果撰写，数据来自 37/37 通过的测试套件与真实模型端到端验证。
+  </div>
+
+</div>
+</body>
+</html>

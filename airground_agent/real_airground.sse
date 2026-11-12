@@ -1,0 +1,45 @@
+event: start
+data: {"goal": "对变电站做一次空地协同巡检：无人机查绝缘子，机器狗查开关柜", "mode": "real"}
+
+event: planning
+data: {"goal": "对变电站做一次空地协同巡检：无人机查绝缘子，机器狗查开关柜"}
+
+event: plan
+data: {"goal_id": "goal-83b51692", "root_goal": "变电站协同巡检", "subtasks": {"t1": {"id": "t1", "description": "查询天气", "depends_on": [], "tool_hint": "weather", "success_criteria": "输出天气", "platform": "shared", "status": "pending"}, "t2": {"id": "t2", "description": "航拍绝缘子", "depends_on": ["t1"], "tool_hint": "camera", "success_criteria": "生成航拍", "platform": "uav", "status": "pending"}, "t3": {"id": "t3", "description": "巡查开关柜", "depends_on": ["t1"], "tool_hint": "camera", "success_criteria": "生成近拍", "platform": "dog", "status": "pending"}, "t4": {"id": "t4", "description": "云端识别", "depends_on": ["t2", "t3"], "tool_hint": "cloud_llm", "success_criteria": "输出缺陷", "platform": "shared", "status": "pending"}, "t5": {"id": "t5", "description": "脱敏汇总", "depends_on": ["t4"], "tool_hint": "anonymize", "success_criteria": "输出报告", "platform": "shared", "status": "pending"}}, "success_criteria": "生成巡检报告", "created_at": 1790870038.5445726}
+
+event: select
+data: {"node": "t1", "description": "查询天气", "tool_hint": "weather", "platform": "shared", "depends_on": []}
+
+event: step
+data: {"step_id": 1, "subtask_id": "t1", "thought": "为实现最终目标“变电站协同巡检”，当前必须先完成子任务 t1“查询天气”。天气信息会影响巡检安全、设备选择和后续路径/任务安排；调用 weather 工具能够直接满足成功判据“输出天气”。当前世界状态安全检查已通过且无阻断，动作仍服务全局目标。", "action": {"tool": "weather", "args": {"location": "变电站"}}, "observation": "天气晴、风速<5m/s，航线许可", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "shared", "latency_ms": 20.0, "attempt": 0, "timestamp": 1790870062.5957196}
+
+event: select
+data: {"node": "t2", "description": "航拍绝缘子", "tool_hint": "camera", "platform": "uav", "depends_on": ["t1"]}
+
+event: step
+data: {"step_id": 2, "subtask_id": "t2", "thought": "为服务最终目标“变电站协同巡检”，当前子任务 t2 的成功判据是“生成航拍”。世界状态显示 battery=100、safety_cleared=True、weather_ok=True、route_permitted=True，满足执行航拍所需的安全、天气、航线和电量前提。本步选择 camera 获取绝缘子航拍图像，直接产出子任务所需成果，动作仍然对齐全局巡检目标。", "action": {"tool": "camera", "args": {"target": "insulator", "mode": "aerial_capture", "scene": "substation_inspection", "output": "aerial_image"}}, "observation": "完成航拍，素材存于 /data/footage/3f1440b5.mp4", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "uav", "latency_ms": 30.0, "attempt": 0, "timestamp": 1790870087.77979}
+
+event: select
+data: {"node": "t3", "description": "巡查开关柜", "tool_hint": "camera", "platform": "dog", "depends_on": ["t1"]}
+
+event: step
+data: {"step_id": 3, "subtask_id": "t3", "thought": "为服务最终目标“变电站协同巡检”，当前子任务 t3 的成功判据是“生成近拍”。世界状态显示电量充足、安全放行、天气与路线均允许，因此可执行拍摄动作；使用 camera 对开关柜进行近距离拍摄，直接产出满足成功判据的近拍素材。", "action": {"tool": "camera", "args": {"target": "开关柜", "shot_type": "close_up", "purpose": "inspection", "output_requirement": "生成近拍"}}, "observation": "完成航拍，素材存于 /data/footage/55c1e478.mp4", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "dog", "latency_ms": 30.0, "attempt": 0, "timestamp": 1790870114.8743978}
+
+event: select
+data: {"node": "t4", "description": "云端识别", "tool_hint": "cloud_llm", "platform": "shared", "depends_on": ["t2", "t3"]}
+
+event: step
+data: {"step_id": 4, "subtask_id": "t4", "thought": "当前子任务 t4 的目标是进行云端识别，成功判据是输出缺陷。世界状态显示已存在巡检视频 footage=True，且提供 footage_path=/data/footage/55c1e478.mp4，满足调用云端识别工具的前置条件。本动作使用 cloud_llm 对巡检视频进行缺陷识别，直接服务于最终目标“变电站协同巡检”中的缺陷发现环节，未偏离全局目标。", "action": {"tool": "cloud_llm", "args": {"input_path": "/data/footage/55c1e478.mp4", "task": "detect_substation_defects", "output": "defect_list"}}, "observation": "云端分析完成", "precondition_ok": true, "precondition_failed": [], "tier_used": "cloud", "platform": "shared", "latency_ms": 200.0, "attempt": 0, "timestamp": 1790870139.9945362}
+
+event: select
+data: {"node": "t5", "description": "脱敏汇总", "tool_hint": "anonymize", "platform": "shared", "depends_on": ["t4"]}
+
+event: step
+data: {"step_id": 5, "subtask_id": "t5", "thought": "为服务最终目标“变电站协同巡检”，当前子任务 t5 的成功判据是“输出报告”。世界状态显示巡检素材已获取且分析已完成（analysis='done'），满足进行脱敏汇总的前置条件。本步使用脱敏工具对分析结果和相关素材路径进行脱敏汇总，直接产出可交付报告，动作仍然服务全局目标且未偏离子任务。", "action": {"tool": "anonymize", "args": {"analysis_status": "done", "footage_path": "/data/footage/55c1e478.mp4", "output": "report", "task": "desensitized_summary"}}, "observation": "人脸已匿名化，输出 final_anon.mp4", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "shared", "latency_ms": 50.0, "attempt": 0, "timestamp": 1790870165.7586277}
+
+event: result
+data: {"run_id": "run-ddeacd57", "goal": "对变电站做一次空地协同巡检：无人机查绝缘子，机器狗查开关柜", "status": "success", "plan": {"goal_id": "goal-83b51692", "root_goal": "变电站协同巡检", "subtasks": {"t1": {"id": "t1", "description": "查询天气", "depends_on": [], "tool_hint": "weather", "success_criteria": "输出天气", "platform": "shared", "status": "done"}, "t2": {"id": "t2", "description": "航拍绝缘子", "depends_on": ["t1"], "tool_hint": "camera", "success_criteria": "生成航拍", "platform": "uav", "status": "done"}, "t3": {"id": "t3", "description": "巡查开关柜", "depends_on": ["t1"], "tool_hint": "camera", "success_criteria": "生成近拍", "platform": "dog", "status": "done"}, "t4": {"id": "t4", "description": "云端识别", "depends_on": ["t2", "t3"], "tool_hint": "cloud_llm", "success_criteria": "输出缺陷", "platform": "shared", "status": "done"}, "t5": {"id": "t5", "description": "脱敏汇总", "depends_on": ["t4"], "tool_hint": "anonymize", "success_criteria": "输出报告", "platform": "shared", "status": "done"}}, "success_criteria": "生成巡检报告", "created_at": 1790870038.5445726}, "trace": [{"step_id": 1, "subtask_id": "t1", "thought": "为实现最终目标“变电站协同巡检”，当前必须先完成子任务 t1“查询天气”。天气信息会影响巡检安全、设备选择和后续路径/任务安排；调用 weather 工具能够直接满足成功判据“输出天气”。当前世界状态安全检查已通过且无阻断，动作仍服务全局目标。", "action": {"tool": "weather", "args": {"location": "变电站"}}, "observation": "天气晴、风速<5m/s，航线许可", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "shared", "latency_ms": 20.0, "attempt": 0, "timestamp": 1790870062.5957196}, {"step_id": 2, "subtask_id": "t2", "thought": "为服务最终目标“变电站协同巡检”，当前子任务 t2 的成功判据是“生成航拍”。世界状态显示 battery=100、safety_cleared=True、weather_ok=True、route_permitted=True，满足执行航拍所需的安全、天气、航线和电量前提。本步选择 camera 获取绝缘子航拍图像，直接产出子任务所需成果，动作仍然对齐全局巡检目标。", "action": {"tool": "camera", "args": {"target": "insulator", "mode": "aerial_capture", "scene": "substation_inspection", "output": "aerial_image"}}, "observation": "完成航拍，素材存于 /data/footage/3f1440b5.mp4", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "uav", "latency_ms": 30.0, "attempt": 0, "timestamp": 1790870087.77979}, {"step_id": 3, "subtask_id": "t3", "thought": "为服务最终目标“变电站协同巡检”，当前子任务 t3 的成功判据是“生成近拍”。世界状态显示电量充足、安全放行、天气与路线均允许，因此可执行拍摄动作；使用 camera 对开关柜进行近距离拍摄，直接产出满足成功判据的近拍素材。", "action": {"tool": "camera", "args": {"target": "开关柜", "shot_type": "close_up", "purpose": "inspection", "output_requirement": "生成近拍"}}, "observation": "完成航拍，素材存于 /data/footage/55c1e478.mp4", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "dog", "latency_ms": 30.0, "attempt": 0, "timestamp": 1790870114.8743978}, {"step_id": 4, "subtask_id": "t4", "thought": "当前子任务 t4 的目标是进行云端识别，成功判据是输出缺陷。世界状态显示已存在巡检视频 footage=True，且提供 footage_path=/data/footage/55c1e478.mp4，满足调用云端识别工具的前置条件。本动作使用 cloud_llm 对巡检视频进行缺陷识别，直接服务于最终目标“变电站协同巡检”中的缺陷发现环节，未偏离全局目标。", "action": {"tool": "cloud_llm", "args": {"input_path": "/data/footage/55c1e478.mp4", "task": "detect_substation_defects", "output": "defect_list"}}, "observation": "云端分析完成", "precondition_ok": true, "precondition_failed": [], "tier_used": "cloud", "platform": "shared", "latency_ms": 200.0, "attempt": 0, "timestamp": 1790870139.9945362}, {"step_id": 5, "subtask_id": "t5", "thought": "为服务最终目标“变电站协同巡检”，当前子任务 t5 的成功判据是“输出报告”。世界状态显示巡检素材已获取且分析已完成（analysis='done'），满足进行脱敏汇总的前置条件。本步使用脱敏工具对分析结果和相关素材路径进行脱敏汇总，直接产出可交付报告，动作仍然服务全局目标且未偏离子任务。", "action": {"tool": "anonymize", "args": {"analysis_status": "done", "footage_path": "/data/footage/55c1e478.mp4", "output": "report", "task": "desensitized_summary"}}, "observation": "人脸已匿名化，输出 final_anon.mp4", "precondition_ok": true, "precondition_failed": [], "tier_used": "edge", "platform": "shared", "latency_ms": 50.0, "attempt": 0, "timestamp": 1790870165.7586277}], "reflection": null, "final_facts": {"battery": 80, "safety_cleared": true, "edge_capable": true, "weather_ok": true, "route_permitted": true, "footage": true, "footage_path": "/data/footage/55c1e478.mp4", "analysis": "done", "anonymized": true, "final_path": "/data/out/final_anon.mp4"}, "metrics": {"run_id": "run-5694684d", "goal": "对变电站做一次空地协同巡检：无人机查绝缘子，机器狗查开关柜", "status": "success", "planning_success": true, "action_reasonableness": 1.0, "precondition_violations": 0, "latency_p50": 30.0, "latency_p95": 170.0, "latency_p99": 194.0, "end_to_end_ms": 330.0, "csat": 4.5, "steps": 5, "root_cause_layer": null, "timestamp": 1790870165.759627}, "success_criteria_met": true}
+
+event: end
+data: {}
+

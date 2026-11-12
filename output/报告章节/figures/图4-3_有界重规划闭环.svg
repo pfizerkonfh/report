@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="772" viewBox="0 0 1200 772" font-family="Microsoft YaHei, SimHei, sans-serif">
+<defs><marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M0,0 L12,6 L0,12 Z" fill="#42557a"/></marker></defs>
+<rect width="1200" height="772" fill="#ffffff"/>
+<text x="600.0" y="34" text-anchor="middle" font-size="19" font-weight="700" fill="#1f2b3d">图 4-3  Reasoner 有界重规划闭环</text>
+<line x1="40" y1="50" x2="1160" y2="50" stroke="#dbe3ee" stroke-width="1"/>
+<path d="M 600.0 122.0 L 600.0 254.0" fill="none" stroke="#42557a" stroke-width="1.9" marker-end="url(#arrow)"/>
+<path d="M 600.0 254.0 L 600.0 386.0" fill="none" stroke="#42557a" stroke-width="1.9" marker-end="url(#arrow)"/>
+<path d="M 600.0 386.0 L 600.0 518.0" fill="none" stroke="#42557a" stroke-width="1.9" marker-end="url(#arrow)"/>
+<path d="M 600.0 518.0 L 600.0 650.0" fill="none" stroke="#42557a" stroke-width="1.9" marker-end="url(#arrow)"/>
+<rect x="290.0" y="86" width="620" height="72" rx="9" fill="#eaf5ee" stroke="#2f8f5b" stroke-width="1.6"/>
+<text x="600.0" y="126.3" text-anchor="middle" font-size="13" fill="#17452c">就绪节点：依赖已完成、平台已判定</text>
+<rect x="290.0" y="218" width="620" height="72" rx="9" fill="#fff2e3" stroke="#d97706" stroke-width="1.6"/>
+<text x="600.0" y="250.3" text-anchor="middle" font-size="13" fill="#7a3d05">前置条件校验：Precondition +</text>
+<text x="600.0" y="266.3" text-anchor="middle" font-size="13" fill="#7a3d05">GoalRegistry 对齐</text>
+<rect x="290.0" y="350" width="620" height="72" rx="9" fill="#eaf1fd" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="600.0" y="382.3" text-anchor="middle" font-size="13" fill="#173a6d">执行与遥测回传：Adapter 通道 / 语义 Effect</text>
+<text x="600.0" y="398.3" text-anchor="middle" font-size="13" fill="#173a6d">回写</text>
+<rect x="290.0" y="482" width="620" height="72" rx="9" fill="#eef1f6" stroke="#55617a" stroke-width="1.6"/>
+<text x="600.0" y="522.3" text-anchor="middle" font-size="13" fill="#232c3d">成功写 TraceStep，继续下一节点</text>
+<rect x="290.0" y="614" width="620" height="72" rx="9" fill="#eaf1fd" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="600.0" y="646.3" text-anchor="middle" font-size="13" fill="#173a6d">失败则有界重规划 ≤2 次，仍失败转 Reflexion</text>
+<text x="600.0" y="662.3" text-anchor="middle" font-size="13" fill="#173a6d">归因</text>
+<text x="600.0" y="756" text-anchor="middle" font-size="12" fill="#6b7a90">急停走独立终止分支，取消后立即停机，不再进入重规划或反思。</text>
+</svg>

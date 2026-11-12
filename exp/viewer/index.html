@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>实验室场景 · 3D 高斯泼溅建图可视化</title>
+<style>
+  :root{
+    --bg:#f4f6fb; --card:#ffffff; --text:#1f2933; --muted:#647084;
+    --accent:#2563eb; --accent2:#0ea5a4; --border:#e4e9f2; --good:#16a34a;
+    --shadow:0 6px 24px rgba(30,50,90,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased}
+  header.top{padding:30px 24px 22px;background:linear-gradient(120deg,#1e3a8a,#0ea5a4);color:#fff}
+  header.top h1{margin:0 0 6px;font-size:24px;font-weight:700;letter-spacing:.5px}
+  header.top p{margin:0;opacity:.9;font-size:14px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:-26px auto 26px;max-width:1140px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .stat .v{font-size:22px;font-weight:800;color:var(--accent)}
+  .stat .l{font-size:12.5px;color:var(--muted);margin-top:2px}
+  section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;margin:22px 0;box-shadow:var(--shadow)}
+  section h2{margin:0 0 4px;font-size:18px}
+  section .sub{margin:0 0 16px;color:var(--muted);font-size:13.5px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  .toolbar label{font-size:13px;color:var(--muted)}
+  select,button{font:inherit;border-radius:9px;border:1px solid var(--border);background:#fff;padding:8px 12px;cursor:pointer;color:var(--text)}
+  button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+  button:hover{filter:brightness(.97)}
+  .toggle{display:inline-flex;border:1px solid var(--border);border-radius:9px;overflow:hidden}
+  .toggle button{border:none;border-radius:0;background:#fff}
+  .toggle button.on{background:var(--accent);color:#fff}
+  .viewer-wrap{position:relative;width:100%;height:74vh;min-height:460px;border-radius:12px;overflow:hidden;background:#0b1220}
+  #viewer-container{position:absolute;inset:0}
+  #viewer-container canvas{display:block;width:100%!important;height:100%!important}
+  .overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(8,14,28,.82);color:#fff;z-index:5;gap:14px}
+  .overlay.hidden{display:none}
+  .bar{width:60%;height:8px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s}
+  .overlay .msg{font-size:13px;opacity:.9;text-align:center;max-width:560px;padding:0 16px}
+  .hint{position:absolute;left:12px;bottom:10px;z-index:4;font-size:12px;color:#cdd6e6;background:rgba(8,14,28,.5);padding:6px 10px;border-radius:8px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:18px}
+  .card{border:1px solid var(--border);border-radius:12px;overflow:hidden;background:#fff}
+  .card .head{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+  .badge{background:#ecfdf5;color:var(--good);font-weight:700;padding:2px 8px;border-radius:20px;font-size:12px}
+  .compare{position:relative;width:100%;aspect-ratio:288/141;background:#0b1220;user-select:none}
+  .compare img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+  .compare .gt{z-index:1}
+  .compare .render{z-index:2;clip-path:inset(0 50% 0 0)}
+  .compare .divider{position:absolute;top:0;bottom:0;left:50%;width:2px;background:#fff;z-index:3;transform:translateX(-1px);box-shadow:0 0 6px rgba(0,0,0,.5)}
+  .compare .tag{position:absolute;top:8px;font-size:11px;color:#fff;background:rgba(0,0,0,.45);padding:2px 7px;border-radius:6px;z-index:4}
+  .compare .tag.l{left:8px}.compare .tag.r{right:8px}
+  .compare input[type=range]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;z-index:5;margin:0}
+  table.mt{width:100%;border-collapse:collapse;font-size:13.5px}
+  table.mt th,table.mt td{border-bottom:1px solid var(--border);padding:9px 10px;text-align:left}
+  table.mt th{color:var(--muted);font-weight:600;background:#fafbfe}
+  .note{font-size:12.5px;color:var(--muted);margin-top:10px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:12px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:middle}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;padding:20px}
+  .err{color:#fca5a5}
+  code{background:#0b1220;color:#cdd6e6;padding:1px 5px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>实验室场景 · 3D 高斯泼溅建图可视化</h1>
+  <p>3D Gaussian Splatting 重建结果展示 — 可交互三维场景 + 渲染保真度量化评估</p>
+</header>
+
+<div class="wrap">
+  <div class="stats" id="stats"></div>
+
+  <!-- 1. 交互式 3D 查看器 -->
+  <section>
+    <h2>① 可交互 3D 建图结果</h2>
+    <p class="sub">默认以<strong>稳定点云模式</strong>秒开重建场景（可自由旋转/缩放）；如需完整高斯泼溅质感，点击“高清模式”按需加载（约 96&nbsp;MB）。</p>
+    <div class="toolbar">
+      <div class="toggle" id="modeToggle">
+        <button data-mode="points" class="on">点云模式（稳定·秒开）</button>
+        <button data-mode="splat">高斯泼溅高清模式</button>
+      </div>
+      <label>高清模型迭代:</label>
+      <select id="modelSel">
+        <option value="/point_cloud/iteration_10000/point_cloud.ply">iteration_10000（387,299 高斯）</option>
+        <option value="/point_cloud/iteration_7000/point_cloud.ply">iteration_7000（375,387 高斯）</option>
+      </select>
+      <button class="primary" id="resetBtn">重置视角</button>
+      <span id="viewerMsg" class="note"></span>
+    </div>
+    <div class="viewer-wrap">
+      <div id="viewer-container"></div>
+      <div class="hint">拖拽=旋转 · 滚轮=缩放 · 右键拖拽=平移</div>
+      <div class="overlay hidden" id="overlay">
+        <div class="bar"><i id="progBar"></i></div>
+        <div class="msg" id="progMsg">加载中…</div>
+      </div>
+    </div>
+    <p class="note">说明：点云模式读取的是从完整模型抽稀出的 12.9 万色点（保留几何与颜色），适合快速查看建图覆盖与结构；高清模式加载原始高斯泼溅，呈现照片级连续表面。两者都通过同一 HTTP 服务访问，请确认本地服务仍在运行。</p>
+  </section>
+
+  <!-- 2. 渲染 vs 真值对比 -->
+  <section>
+    <h2>② 新视角合成质量（渲染 vs 真值）</h2>
+    <p class="sub">拖动滑块对比 <b>3DGS 渲染图</b> 与 <b>真实照片(GT)</b>。左侧为模型在未见视角下的合成结果。</p>
+    <div class="legend">
+      <span><i style="background:#2563eb"></i>3DGS 渲染（模型合成）</span>
+      <span><i style="background:#0ea5a4"></i>真实照片 GT（采集真值）</span>
+    </div>
+    <div class="toolbar">
+      <div class="toggle" id="splitToggle">
+        <button data-set="test" class="on">测试集（13 视角）</button>
+        <button data-set="train">训练集（采样 11 视角）</button>
+      </div>
+    </div>
+    <div class="grid" id="gallery"></div>
+  </section>
+
+  <!-- 3. 量化指标 -->
+  <section>
+    <h2>③ 量化评估指标</h2>
+    <p class="sub">基于测试集 / 训练集渲染与真值的逐像素 PSNR（峰值信噪比，单位 dB，越高越好）。</p>
+    <table class="mt" id="metricsTable">
+      <thead><tr><th>评估项</th><th>数值</th><th>说明</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <p class="note" id="perImageNote"></p>
+  </section>
+
+  <footer>数据来源：exp/ 目录（3DGS 训练输出）· 查看器基于 three.js + @mkkellogg/gaussian-splats-3d · 本页为离线自包含部署</footer>
+</div>
+
+<!-- three 必须映射为裸模块名，供 OrbitControls / PLYLoader / gaussian-splats-3d 引入 -->
+<script type="importmap">
+{ "imports": { "three": "/viewer/vendor/three.module.js" } }
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from '/viewer/vendor/OrbitControls.js';
+import { PLYLoader } from '/viewer/vendor/PLYLoader.js';
+import * as GS from '/viewer/vendor/gaussian-splats-3d.module.js';
+
+const overlay = document.getElementById('overlay');
+const progBar = document.getElementById('progBar');
+const progMsg = document.getElementById('progMsg');
+const viewerMsg = document.getElementById('viewerMsg');
+const container = document.getElementById('viewer-container');
+
+let mode = 'points';
+let threeState = null;
+let splatViewer = null;
+let currentSplatUrl = '/point_cloud/iteration_10000/point_cloud.ply';
+
+/* ---------- 通用 UI ---------- */
+function showOverlay(msg, pct){ overlay.classList.remove('hidden'); progMsg.textContent = msg; progBar.style.width = (pct||0)+'%'; }
+function hideOverlay(){ overlay.classList.add('hidden'); }
+function showError(msg){ overlay.classList.remove('hidden'); overlay.innerHTML = `<div class="msg err">${msg}<br><br>可改用桌面端 3DGS/SIBR 查看器打开 <code>point_cloud/iteration_10000/point_cloud.ply</code></div>`; }
+window.addEventListener('error', e=> showError('页面脚本错误：' + (e.message || e.error)));
+window.addEventListener('unhandledrejection', e=> showError('异步错误：' + ((e.reason && e.reason.message) || e.reason)));
+
+function clearContainer(){
+  if(threeState){ try{ cancelAnimationFrame(threeState.raf); threeState.renderer.dispose(); }catch(e){} threeState=null; }
+  if(splatViewer){ try{ splatViewer.dispose(); }catch(e){} splatViewer=null; }
+  container.innerHTML = '';
+}
+
+function onResize(){
+  if(!threeState) return;
+  const c = threeState.container;
+  threeState.renderer.setSize(c.clientWidth, c.clientHeight);
+  threeState.camera.aspect = c.clientWidth / c.clientHeight;
+  threeState.camera.updateProjectionMatrix();
+}
+
+/* ---------- 模式一：three.js 点云（稳定） ---------- */
+function loadPoints(){
+  mode = 'points';
+  clearContainer();
+  showOverlay('正在加载轻量点云…', 5);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b1220);
+  const camera = new THREE.PerspectiveCamera(60, container.clientWidth/container.clientHeight, 0.01, 2000);
+  const renderer = new THREE.WebGLRenderer({ antialias:true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  container.appendChild(renderer.domElement);
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = 0.08;
+
+  const loader = new PLYLoader();
+  loader.load('/viewer/points_light.ply',
+    (geo)=>{
+      geo.computeBoundingBox();
+      const center = geo.boundingBox.getCenter(new THREE.Vector3());
+      const size = geo.boundingBox.getSize(new THREE.Vector3());
+      const radius = Math.max(size.x, size.y, size.z) * 0.5 || 1;
+      const mat = new THREE.PointsMaterial({ size: radius*0.013, vertexColors:true, sizeAttenuation:true });
+      scene.add(new THREE.Points(geo, mat));
+      camera.position.copy(center).add(new THREE.Vector3(radius*0.8, radius*0.5, radius*1.5));
+      controls.target.copy(center);
+      controls.update();
+      hideOverlay();
+      viewerMsg.textContent = '✓ 点云已加载（稳定模式）：拖拽旋转 / 滚轮缩放 / 右键平移';
+    },
+    (xhr)=>{ if(xhr.total) progBar.style.width = Math.round(xhr.loaded/xhr.total*100)+'%'; },
+    (err)=> showError('点云加载失败：' + (err && err.message ? err.message : err))
+  );
+
+  threeState = { renderer, scene, camera, controls, container, raf:0 };
+  const animate = ()=>{ threeState.raf = requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); };
+  animate();
+}
+
+/* ---------- 模式二：mkkellogg 高斯泼溅（高清，按需） ---------- */
+function loadSplat(url){
+  mode = 'splat';
+  currentSplatUrl = url;
+  clearContainer();
+  showOverlay('正在加载高斯泼溅模型（约 96 MB）…', 0);
+  try{
+    splatViewer = new GS.Viewer({
+      rootElement: container,
+      useBuiltInControls: true,
+      selfDrivenMode: true,
+    });
+    splatViewer.addSplatScene(url, {
+      format: GS.SceneFormat.Ply,
+      splatAlphaRemovalThreshold: 1,
+      showLoadingUI: false,
+      onProgress: (percent, percentLabel, messageLabel)=>{
+        const p = Math.max(0, Math.min(100, percent||0));
+        progBar.style.width = p + '%';
+        progMsg.textContent = (messageLabel || ('加载中 ' + (percentLabel||p.toFixed(0)) + '%'));
+      }
+    }).then(()=>{
+      splatViewer.start();
+      hideOverlay();
+      viewerMsg.textContent = '✓ 高斯泼溅已加载：拖拽旋转 / 滚轮缩放 / 右键平移';
+    }).catch(err=> showError('高斯泼溅加载失败：' + (err && err.message ? err.message : err) + '（可切回“点云模式”查看）'));
+  }catch(e){
+    showError('查看器初始化失败：' + (e && e.message ? e.message : e) + '（请确认浏览器支持 WebGL2；或切回“点云模式”查看）');
+  }
+}
+
+/* ---------- 数据面板 ---------- */
+async function loadMetrics(){
+  const m = await fetch('/viewer/metrics.json').then(r=>r.json());
+  const items = [
+    ['387,299','高斯数量 (iter 10000)'],
+    [m.iterations.toLocaleString(),'训练迭代次数'],
+    [m.camera_poses,'采集相机位姿'],
+    [m.psnr_test_mean+' dB','测试集 平均 PSNR'],
+    [m.psnr_train_mean+' dB','训练集 平均 PSNR'],
+  ];
+  document.getElementById('stats').innerHTML = items.map(([v,l])=>
+    `<div class="stat"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  const rows = [
+    ['场景类型', m.scene, 'LLFF 前向采集的实验室场景'],
+    ['模型格式', m.model_format, 'Inria 3DGS .ply（含 SH 球谐）'],
+    ['高斯数量', '387,299（iter10000）/ 375,387（iter7000）', '场景表征的基本图元数'],
+    ['测试集 平均 PSNR', m.psnr_test_mean+' dB', '13 个未参与训练的视角'],
+    ['训练集 平均 PSNR', m.psnr_train_mean+' dB', '85 个训练视角中采样 11 个'],
+    ['逐视角 PSNR（测试）', m.psnr_test_per_image.map(x=>x.toFixed(1)).join(' / '), '各测试图像峰值信噪比'],
+  ];
+  document.querySelector('#metricsTable tbody').innerHTML = rows.map(r=>
+    `<tr><td><b>${r[0]}</b></td><td>${r[1]}</td><td style="color:var(--muted)">${r[2]}</td></tr>`).join('');
+  document.getElementById('perImageNote').textContent =
+    `说明：PSNR 越高代表合成图与真实照片越接近；3DGS 在训练视角可达约 ${m.psnr_train_mean} dB，在未见视角约 ${m.psnr_test_mean} dB，属该方法的典型水平。`;
+  return m;
+}
+
+function renderGallery(set){
+  const data = (window.__gallery[set]||[]);
+  const el = document.getElementById('gallery');
+  el.innerHTML = data.map(d=>`
+    <div class="card">
+      <div class="head"><span>${d.name}</span><span class="badge">PSNR ${d.psnr.toFixed(2)} dB</span></div>
+      <div class="compare" data-pos="50">
+        <img class="gt" src="${d.gt}" alt="GT">
+        <img class="render" src="${d.render}" alt="render">
+        <div class="tag l">3DGS 渲染</div>
+        <div class="tag r">真值 GT</div>
+        <div class="divider"></div>
+        <input type="range" min="0" max="100" value="50">
+      </div>
+    </div>`).join('');
+  el.querySelectorAll('.compare').forEach(c=>{
+    const slider=c.querySelector('input[type=range]'), render=c.querySelector('.render'), divider=c.querySelector('.divider');
+    const apply=()=>{ const v=+slider.value; render.style.clipPath=`inset(0 ${100-v}% 0 0)`; divider.style.left=v+'%'; };
+    slider.addEventListener('input', apply); apply();
+  });
+}
+async function loadGallery(){
+  const g = await fetch('/viewer/gallery.json').then(r=>r.json());
+  window.__gallery = g; renderGallery('test');
+  document.querySelectorAll('#splitToggle button').forEach(b=>{
+    b.onclick=()=>{ document.querySelectorAll('#splitToggle button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); renderGallery(b.dataset.set); };
+  });
+}
+
+/* ---------- 启动 ---------- */
+(async ()=>{
+  await loadMetrics();
+  loadGallery();
+  window.addEventListener('resize', onResize);
+
+  document.querySelectorAll('#modeToggle button').forEach(b=>{
+    b.onclick=()=>{
+      document.querySelectorAll('#modeToggle button').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      viewerMsg.textContent='';
+      if(b.dataset.mode==='points') loadPoints();
+      else loadSplat(document.getElementById('modelSel').value);
+    };
+  });
+  document.getElementById('modelSel').addEventListener('change', e=>{
+    if(mode==='splat'){ viewerMsg.textContent=''; loadSplat(e.target.value); }
+  });
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    if(mode==='points') loadPoints();
+    else loadSplat(document.getElementById('modelSel').value);
+  });
+
+  loadPoints(); // 默认稳定模式
+})();
+</script>
+</body>
+</html>

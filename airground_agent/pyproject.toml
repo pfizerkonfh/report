@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "airground-agent"
+version = "0.1.0"
+description = "空地协同多智能体任务分配与边缘智能决策系统（设计文档第4项落地实现）"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain-core>=0.2.0",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "pyyaml>=6.0",
+    "structlog>=24.1.0",
+    "rich>=13.7.0",
+    "openai>=1.30.0",
+]
+
+[project.optional-dependencies]
+llm = ["langchain-openai>=0.1.0"]
+dev = ["pytest>=8.0", "pytest-cov>=4.0"]
+
+[project.scripts]
+airground-demo = "examples.demo:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["airground_agent*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m 'not real_llm'"
+markers = [
+    "real_llm: 需要真实模型 API（读取 config/real_model.yaml），默认跳过，用 -m real_llm 显式运行",
+]

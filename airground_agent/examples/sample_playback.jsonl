@@ -1,0 +1,13 @@
+// 变电站空地协同巡检 —— 现场录播样本（真实量级时序，用于回放复现）
+// 字段：tool / platform / sim_ms(任务真实耗时) / success / observation / telemetry
+{"tool":"weather","platform":"shared","sim_ms":1200,"success":true,"observation":"气象与航线查询完成：晴、风速 3.2m/s，航线许可","telemetry":{"battery_after":100.0,"link_rssi_dbm":-58}}
+{"tool":"camera","platform":"uav","sim_ms":49000,"success":true,"observation":"无人机航拍完成：高空绝缘子/线路采集，里程 240m","telemetry":{"battery_after":83.5,"odometer_m":240.0,"link_rssi_dbm":-63}}
+{"tool":"camera","platform":"dog","sim_ms":46800,"success":true,"observation":"机器狗近距细查完成：开关柜/表计采集，里程 33m","telemetry":{"battery_after":94.6,"odometer_m":33.0,"link_rssi_dbm":-52}}
+{"tool":"vla","platform":"shared","sim_ms":1006,"success":true,"observation":"端侧 VLA 控制回路完成：20 周期 @30.3ms/帧","telemetry":{"battery_after":83.0,"link_rssi_dbm":-60}}
+{"tool":"cloud_llm","platform":"shared","sim_ms":2500,"success":true,"observation":"云端缺陷识别完成：发现 2 处疑似绝缘子自爆","telemetry":{"battery_after":83.0,"link_rssi_dbm":-59}}
+{"tool":"edit","platform":"shared","sim_ms":45000,"success":true,"observation":"云端剪辑渲染完成：生成巡检短片","telemetry":{"battery_after":83.0,"link_rssi_dbm":-57}}
+{"tool":"anonymize","platform":"shared","sim_ms":6000,"success":true,"observation":"边侧人脸脱敏完成","telemetry":{"battery_after":83.0,"link_rssi_dbm":-57}}
+{"tool":"charge","platform":"shared","sim_ms":60000,"success":true,"observation":"自主充电完成，电量恢复 100%","telemetry":{"battery_after":100.0,"link_rssi_dbm":-55}}
+// 第二架次（电量更低，用于验证电量跨步骤累积的调度约束）
+{"tool":"camera","platform":"uav","sim_ms":49000,"success":true,"observation":"无人机第二架次航拍完成","telemetry":{"battery_after":67.0,"odometer_m":480.0,"link_rssi_dbm":-66}}
+{"tool":"camera","platform":"dog","sim_ms":46800,"success":true,"observation":"机器狗第二区域细查完成","telemetry":{"battery_after":89.2,"odometer_m":66.0,"link_rssi_dbm":-54}}

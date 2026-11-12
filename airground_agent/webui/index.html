@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>空地协同 · 多智能体任务分配与边缘智能决策系统</title>
+<style>
+  :root{
+    --bg:#0b1220; --bg2:#0e1727; --panel:#111c2e; --panel2:#16233a;
+    --border:#23344c; --border2:#2f4a63; --text:#dbe7f5; --muted:#8aa0bd;
+    --accent:#38bdf8; --accent2:#22d3ee; --edge:#34d399; --cloud:#60a5fa;
+    --danger:#f87171; --warn:#fbbf24; --ok:#4ade80; --shadow:0 8px 30px rgba(0,0,0,.35);
+    --uav:#38bdf8; --dog:#f59e0b; --shared:#a78bfa;
+  }
+  .light{
+    --bg:#f4f7fb; --bg2:#eef2f8; --panel:#ffffff; --panel2:#f1f5fb;
+    --border:#d7e0ec; --text:#15233a; --muted:#5b6c85; --shadow:0 8px 30px rgba(20,40,80,.08);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(1200px 600px at 80% -10%, #14233e 0%, var(--bg) 55%) fixed;
+    color:var(--text); font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex; flex-direction:column; height:100vh;
+  }
+  header{
+    display:flex; align-items:center; gap:14px; padding:14px 22px;
+    border-bottom:1px solid var(--border); background:linear-gradient(180deg,var(--bg2),transparent);
+  }
+  header .logo{
+    width:38px;height:38px;border-radius:10px;flex:0 0 auto;
+    background:linear-gradient(135deg,var(--accent),#6366f1);
+    display:grid;place-items:center;font-weight:800;color:#04121f;font-size:18px;box-shadow:var(--shadow);
+  }
+  header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.3px}
+  header .sub{font-size:12px;color:var(--muted);margin-top:2px}
+  header .spacer{flex:1}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--panel)}
+  .seg button{background:transparent;border:0;color:var(--muted);padding:7px 14px;font-size:13px;cursor:pointer}
+  .seg button.active{background:linear-gradient(135deg,var(--accent),#6366f1);color:#04121f;font-weight:700}
+  .icon-btn{background:var(--panel);border:1px solid var(--border);color:var(--muted);border-radius:9px;width:34px;height:34px;cursor:pointer;font-size:15px}
+  .icon-btn:hover{color:var(--text)}
+
+  main{flex:1;display:grid;grid-template-columns:380px 1fr;gap:0;min-height:0}
+  @media(max-width:920px){main{grid-template-columns:1fr}}
+
+  .left{border-right:1px solid var(--border);padding:18px;overflow:auto;background:var(--bg2)}
+  .right{padding:18px 22px;overflow:auto;min-height:0}
+
+  label.fld{display:block;font-size:12px;color:var(--muted);margin:14px 0 6px}
+  textarea,input[type=text]{
+    width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:10px 12px;font:13px/1.5 "SFMono-Regular",Consolas,monospace;resize:vertical;
+  }
+  textarea:focus,input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.15)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{background:var(--panel);border:1px solid var(--border);color:var(--muted);border-radius:999px;padding:6px 11px;font-size:12px;cursor:pointer}
+  .chip:hover{border-color:var(--accent);color:var(--text)}
+  .row{display:flex;gap:10px;margin-top:14px}
+  .btn{flex:1;border:0;border-radius:11px;padding:11px 14px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+  .btn.primary{background:linear-gradient(135deg,var(--accent),#6366f1);color:#04121f}
+  .btn.primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:var(--panel);border:1px solid var(--border);color:var(--text)}
+  details.adv{margin-top:16px;border:1px solid var(--border);border-radius:11px;background:var(--panel);padding:0 12px}
+  details.adv summary{cursor:pointer;padding:10px 0;color:var(--muted);font-size:12px;user-select:none}
+  .adv .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px}
+
+  /* stepper */
+  .stepper{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+  .step{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+  .step .dot{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:grid;place-items:center;font-size:11px}
+  .step.active{color:var(--text)}
+  .step.active .dot{border-color:var(--accent);background:var(--accent);color:#04121f;font-weight:800}
+  .step.done .dot{border-color:var(--ok);background:var(--ok);color:#04121f}
+  .step.fail .dot{border-color:var(--danger);background:var(--danger);color:#1a0606}
+  .step .bar{flex:1;height:2px;background:var(--border);width:34px}
+
+  .status{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);
+    border-radius:11px;background:var(--panel);color:var(--text);margin-bottom:16px;font-size:13px}
+  .status .spin{width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;flex:0 0 auto}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .status.idle .spin{display:none}
+
+  section.card{border:1px solid var(--border);border-radius:14px;background:var(--panel);padding:16px;margin-bottom:18px;box-shadow:var(--shadow)}
+  section.card h2{margin:0 0 12px;font-size:14px;display:flex;align-items:center;gap:8px}
+  section.card h2 .tag{font-size:11px;color:var(--muted);font-weight:500}
+
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--muted);margin:0 0 10px;align-items:center}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+  .dag-wrap{overflow:auto;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:8px}
+  svg .dn-rect{fill:var(--panel2);stroke:var(--border);stroke-width:1.5;transition:.3s}
+  svg g.active .dn-rect{stroke:var(--accent);filter:drop-shadow(0 0 6px rgba(56,189,248,.6))}
+  svg g.done .dn-rect{stroke:var(--ok)}
+  svg g.blocked .dn-rect{stroke:var(--danger);stroke-dasharray:4 3}
+  svg text{font-family:inherit}
+
+  .sublist{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:14px}
+  .sub{background:var(--panel2);border:1px solid var(--border);border-radius:11px;padding:11px 12px;position:relative;transition:.3s}
+  .sub.active{border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.18)}
+  .sub.done{border-color:var(--ok)}
+  .sub.blocked{border-color:var(--danger)}
+  .sub .id{font-weight:700;font-size:13px;color:var(--text)}
+  .sub .desc{font-size:12px;color:var(--muted);margin:3px 0 6px}
+  .sub .meta{display:flex;flex-wrap:wrap;gap:5px;font-size:11px}
+  .badge{background:rgba(56,189,248,.12);color:var(--accent);border:1px solid rgba(56,189,248,.25);border-radius:6px;padding:1px 6px}
+  .badge.tool{background:rgba(34,211,238,.12);color:var(--accent2);border-color:rgba(34,211,238,.25)}
+  .badge.dep{background:transparent;color:var(--muted);border:1px dashed var(--border)}
+  .sub .st{position:absolute;top:10px;right:10px;font-size:10px;color:var(--muted)}
+  .sub.done .st{color:var(--ok)} .sub.blocked .st{color:var(--danger)}
+
+  .trace{display:flex;flex-direction:column;gap:10px}
+  .tcard{background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:11px 13px;animation:slide .35s ease}
+  @keyframes slide{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .tcard.blocked{border-left-color:var(--danger)}
+  .tcard .th{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;margin-bottom:6px}
+  .tcard .n{font-weight:700;color:var(--text)}
+  .tcard .thought{font-size:12.5px;color:var(--text);font-style:italic;margin:4px 0}
+  .tcard .obs{font-size:12px;color:var(--edge);margin-top:5px}
+  .tcard .act{font-size:11.5px;color:var(--muted);margin-top:4px;white-space:pre-wrap;word-break:break-all}
+  .pill{padding:1px 7px;border-radius:999px;font-size:11px}
+  .pill.edge{background:rgba(52,211,153,.14);color:var(--edge)}
+  .pill.cloud{background:rgba(96,165,250,.16);color:var(--cloud)}
+  .pill.ok{background:rgba(74,222,128,.16);color:var(--ok)}
+  .pill.no{background:rgba(248,113,113,.16);color:var(--danger)}
+
+  .metrics{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .m{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:13px}
+  .m .k{font-size:11px;color:var(--muted)}
+  .m .v{font-size:22px;font-weight:800;margin-top:4px}
+  .bar{height:7px;background:var(--border);border-radius:6px;overflow:hidden;margin-top:8px}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--edge))}
+  .stars{color:var(--warn);font-size:18px;letter-spacing:2px}
+  .facts{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:10px}
+  .fact{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;font-size:12px}
+  .fact b{color:var(--accent)}
+
+  .prog{margin:10px 0;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--bg2)}
+  .prog-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;gap:10px}
+  .prog-bar{height:6px;background:var(--panel);border-radius:999px;overflow:hidden}
+  .prog-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#6366f1);transition:width .15s linear}
+  .tele{margin-top:7px;font-size:11px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px}
+  .tele span{padding:1px 7px;border-radius:6px;background:var(--panel);border:1px solid var(--border)}
+  .reflex{border-color:var(--danger)!important}
+  .reflex .k{color:var(--danger)}
+  .reflex p{margin:5px 0;font-size:13px}
+  .errbox{white-space:pre-wrap;font-family:monospace;font-size:12px;color:var(--danger);background:rgba(248,113,113,.08);border:1px solid var(--danger);border-radius:10px;padding:12px;max-height:280px;overflow:auto}
+  .hidden{display:none!important}
+  .empty{color:var(--muted);font-size:13px;text-align:center;padding:40px 10px}
+  .toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--border);padding:10px 16px;border-radius:10px;box-shadow:var(--shadow);font-size:13px;opacity:0;transition:.3s;pointer-events:none}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">空</div>
+  <div>
+    <h1>空地协同 · 多智能体任务分配与边缘智能决策系统</h1>
+    <div class="sub">空地协同任务分配（无人机 / 机器狗）→ 多智能体规划（Planner / LangGraph） + ReAct 推理（含 Reflexion） + 端-边-云路由 + 统一评测</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="seg" id="modeSeg">
+    <button data-mode="real" class="active">真实模型</button>
+    <button data-mode="mock">模拟模式</button>
+  </div>
+  <button class="icon-btn" id="themeBtn" title="切换主题">🌗</button>
+</header>
+
+<main>
+  <!-- 左：输入 -->
+  <div class="left">
+    <label class="fld">任务目标（Goal）</label>
+    <textarea id="goal" rows="4" placeholder="例如：帮我把这一天的素材拍好剪成短片并去除人脸"></textarea>
+    <div class="chips" id="examples"></div>
+
+    <details class="adv">
+      <summary>高级配置（世界状态 / 模型参数）</summary>
+      <label class="fld">世界状态 WorldState（JSON，可选覆盖）</label>
+      <textarea id="ws" rows="6"></textarea>
+      <div class="hint">模拟模式下可构造失败场景，例如把 safety_cleared 设为 false 触发前置阻断与 Reflexion。</div>
+      <div class="grid2">
+        <div>
+          <label class="fld">中转站 base_url</label>
+          <input type="text" id="cfgUrl" placeholder="http://host:3000" />
+        </div>
+        <div>
+          <label class="fld">模型名 model_name</label>
+          <input type="text" id="cfgModel" placeholder="gpt-5.5" />
+        </div>
+      </div>
+      <label class="fld">API Key（留空则使用服务端配置）</label>
+      <input type="text" id="cfgKey" placeholder="sk-...（可选）" />
+      <div class="hint">真实模型参数仅在「真实模型」模式下生效；模拟模式走离线确定性后端。</div>
+    </details>
+
+    <details class="adv">
+      <summary>执行通道（ToolAdapter · 决定任务由谁真正做出来）</summary>
+      <label class="fld">通道类型</label>
+      <div class="seg" id="execSeg" style="width:100%">
+        <button data-exec="legacy">离线 Mock</button>
+        <button data-exec="sim">硬件在环仿真</button>
+        <button data-exec="playback">录播回放</button>
+        <button data-exec="ros2">ROS2 真机</button>
+      </div>
+      <div class="hint" id="execHint"></div>
+      <div class="grid2">
+        <div>
+          <label class="fld">仿真加速比 time_scale</label>
+          <input type="number" id="execScale" min="1" max="500" step="1" value="20" />
+        </div>
+        <div>
+          <label class="fld">单次超时 timeout_ms</label>
+          <input type="number" id="execTimeout" min="1000" step="1000" value="120000" />
+        </div>
+      </div>
+      <div class="grid2">
+        <div>
+          <label class="fld">作业失败注入 failure_rate</label>
+          <input type="number" id="execFail" min="0" max="1" step="0.05" value="0" />
+        </div>
+        <div>
+          <label class="fld">链路中断注入 comm_loss_rate</label>
+          <input type="number" id="execLoss" min="0" max="1" step="0.05" value="0" />
+        </div>
+      </div>
+      <div class="hint">
+        硬件在环仿真会<b>真实消耗时间</b>（按加速比压缩），电量 / 里程 / 链路跨步骤持续演化，
+        可注入故障以验证重规划与 Reflexion 路径；录播回放按现场记录的真实时序复现（确定性）。
+      </div>
+    </details>
+
+    <div class="row">
+      <button class="btn primary" id="runBtn">▶ 运行任务</button>
+      <button class="btn ghost" id="abortBtn" disabled style="flex:0 0 92px">■ 中止</button>
+      <button class="btn ghost" id="clearBtn">清空</button>
+    </div>
+  </div>
+
+  <!-- 右：反馈 -->
+  <div class="right">
+    <div class="stepper" id="stepper">
+      <div class="step" data-s="planning"><span class="dot">1</span>规划</div>
+      <div class="bar"></div>
+      <div class="step" data-s="executing"><span class="dot">2</span>执行</div>
+      <div class="bar"></div>
+      <div class="step" data-s="done"><span class="dot">3</span>评测完成</div>
+    </div>
+
+    <div class="status idle" id="status"><span class="spin"></span><span id="statusText">等待任务输入…</span></div>
+
+    <div class="prog hidden" id="progWrap">
+      <div class="prog-head"><span id="progPhase">—</span><span id="progPct"></span></div>
+      <div class="prog-bar"><i id="progFill"></i></div>
+    </div>
+
+    <section class="card" id="planCard">
+      <h2>① 任务规划 DAG（Planner）<span class="tag">目标分解 · 平台分配 · 可行性校验 · DAG 排程</span></h2>
+      <div class="legend" id="legend">
+        <span><i style="background:#38bdf8"></i>无人机（空中）</span>
+        <span><i style="background:#f59e0b"></i>机器狗（地面）</span>
+        <span><i style="background:#a78bfa"></i>协同算力（边/云）</span>
+      </div>
+      <div class="dag-wrap" id="dag"><div class="empty">尚未规划。运行任务后将在此展示子任务依赖图。</div></div>
+      <div class="sublist" id="sublist"></div>
+    </section>
+
+    <section class="card" id="traceCard">
+      <h2>② 执行轨迹（Reasoner · ReAct）<span class="tag">Thought → Action → Observation</span></h2>
+      <div class="trace" id="trace"><div class="empty">执行步将实时流式展示在这里。</div></div>
+    </section>
+
+    <section class="card hidden" id="reflexCard">
+      <h2 class="reflex">③ Reflexion 经验回流<span class="tag">重规划失败后的自我批评与经验沉淀</span></h2>
+      <div id="reflex"></div>
+    </section>
+
+    <section class="card hidden" id="metricCard">
+      <h2>④ 统一评测（四指标）<span class="tag">规划成功率 / 动作合理度 / 端到端时延 / CSAT</span></h2>
+      <div class="metrics" id="metrics"></div>
+      <div id="factsWrap" class="hidden">
+        <label class="fld">终态世界状态 final facts</label>
+        <div class="facts" id="facts"></div>
+      </div>
+    </section>
+
+    <section class="card hidden" id="dogCard">
+      <h2>⑤ 机器狗指令序列（ZSIBOT）<span class="tag">导航 WebSocket + SDK daemon</span></h2>
+      <div class="meta" id="dogSummary" style="margin-bottom:8px"></div>
+      <div id="dogWarn" class="errbox hidden" style="max-height:120px"></div>
+      <div id="dogCmds" style="font-family:ui-monospace,Consolas,monospace;font-size:12px;line-height:1.7;max-height:280px;overflow:auto"></div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn ghost" id="dogExport">导出 mission.json</button>
+        <button class="btn ghost" id="dogCopyWs">复制导航 WebSocket 帧</button>
+      </div>
+    </section>
+
+    <section class="card hidden" id="errCard">
+      <h2 style="color:var(--danger)">运行错误</h2>
+      <div class="errbox" id="errbox"></div>
+    </section>
+  </div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s,r=document)=>r.querySelector(s);
+let MODE = "real";
+let EXEC = "sim";          // 执行通道：legacy | sim | playback | ros2
+let RUN_ID = null;         // 当前运行 id（用于急停）
+let running = false;
+
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function trunc(s,n){s=String(s||"");return s.length>n?s.slice(0,n)+"…":s;}
+
+// 空地协同：物理执行平台（无人机 / 机器狗 / 协同算力）
+const PLAT = {
+  uav:    {label:'无人机',   domain:'空中', color:'#38bdf8'},
+  dog:    {label:'机器狗',   domain:'地面', color:'#f59e0b'},
+  shared: {label:'协同算力', domain:'边/云', color:'#a78bfa'},
+};
+function platOf(p){ return PLAT[p] || PLAT.shared; }
+function platBadge(p){
+  const m = platOf(p);
+  return `<span class="badge plat" style="background:${m.color}22;color:${m.color};border:1px solid ${m.color}55">${m.label}</span>`;
+}
+
+// ---------- 初始化 ----------
+async function init(){
+  try{
+    const r = await fetch('/api/config'); const c = await r.json();
+    // 示例
+    const ex = $('#examples');
+    c.examples.forEach(t=>{const b=document.createElement('div');b.className='chip';b.textContent=trunc(t,18);b.title=t;b.onclick=()=>{$('#goal').value=t;};ex.appendChild(b);});
+    // 默认世界状态
+    $('#ws').value = JSON.stringify(c.default_ws, null, 2);
+    // 真实模型 prefill
+    if(c.model){
+      $('#cfgUrl').value = c.model.base_url||'';
+      $('#cfgModel').value = c.model.model_name||'';
+      if(!c.real_available) MODE='mock';
+  } else {
+    MODE='mock';
+  }    // 执行通道（ToolAdapter）
+    EXEC_MODES = c.exec_modes || [];
+    const de = c.default_exec || {};
+    if(de.mode) EXEC = de.mode;
+    if(de.time_scale) $('#execScale').value = de.time_scale;
+    if(de.timeout_ms) $('#execTimeout').value = de.timeout_ms;
+    $('#execFail').value = de.failure_rate ?? 0;
+    $('#execLoss').value = de.comm_loss_rate ?? 0;
+    setExecUI();
+    setModeUI();
+  }catch(e){ toast('无法连接服务：'+e.message); }
+  $('#goal').focus();
+}
+
+// ---------- 模式切换 ----------
+$('#modeSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;MODE=b.dataset.mode;setModeUI();});
+function setModeUI(){
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('active',b.dataset.mode===MODE));
+}
+
+// ---------- 执行通道切换 ----------
+let EXEC_MODES = [];
+$('#execSeg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;EXEC=b.dataset.exec;setExecUI();});
+function setExecUI(){
+  document.querySelectorAll('#execSeg button').forEach(b=>b.classList.toggle('active',b.dataset.exec===EXEC));
+  const m=(EXEC_MODES||[]).find(x=>x.id===EXEC);
+  $('#execHint').textContent = m ? `${m.label} —— ${m.desc}` : '';
+  const isSim = (EXEC==='sim'||EXEC==='playback');
+  ['#execScale','#execTimeout','#execFail','#execLoss'].forEach(s=>{ $(s).disabled = !isSim; });
+}
+$('#abortBtn').onclick = async ()=>{
+  if(!RUN_ID) return;
+  $('#abortBtn').disabled = true; $('#abortBtn').textContent = '■ 中止中';
+  try{
+    const r = await fetch('/api/abort',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({run_id:RUN_ID})});
+    const j = await r.json();
+    toast(j.ok ? '已下发中止指令' : '中止失败：'+(j.error||'未知'));
+  }catch(e){ toast('中止请求失败：'+e.message); }
+};
+$('#themeBtn').onclick=()=>document.body.classList.toggle('light');
+
+// ---------- 运行 ----------
+$('#runBtn').onclick = runTask;
+$('#dogExport').onclick = ()=>{
+  if(!LAST_MISSION){ toast('还没有可导出的机器狗任务'); return; }
+  download((LAST_MISSION.mission_id||'mission')+'.json', JSON.stringify(LAST_MISSION,null,2));
+  toast('已导出 mission.json');
+};
+$('#dogCopyWs').onclick = async ()=>{
+  if(!LAST_MISSION){ toast('还没有可导出的机器狗任务'); return; }
+  const frames=(LAST_MISSION.commands||[]).filter(c=>c.channel==='nav');
+  const text=JSON.stringify(frames.map((c,i)=>({
+    head:{type:'app_req',source:'app',frame_count:i+1},
+    data:{req_func:c.params?(c.params.map_id?{[c.op]:[c.params.map_id,c.params.path_id||'']}:
+      {[c.op]:c.params}):{[c.op]:null}}
+  })),null,2);
+  try{ await navigator.clipboard.writeText(text); toast('导航帧已复制到剪贴板'); }
+  catch(e){ download('nav_frames.json', text); }
+};
+$('#clearBtn').onclick = ()=>{ resetUI(); $('#trace').innerHTML='<div class="empty">执行步将实时流式展示在这里。</div>'; $('#dag').innerHTML='<div class="empty">尚未规划。运行任务后将在此展示子任务依赖图。</div>'; $('#sublist').innerHTML=''; };
+
+function resetUI(){
+  $('#trace').innerHTML='<div class="empty">执行步将实时流式展示在这里。</div>';
+  $('#dag').innerHTML='<div class="empty">尚未规划。运行任务后将在此展示子任务依赖图。</div>';
+  $('#sublist').innerHTML=''; $('#reflex').innerHTML=''; $('#metrics').innerHTML='';
+  $('#reflexCard').classList.add('hidden'); $('#metricCard').classList.add('hidden');
+  $('#errCard').classList.add('hidden'); $('#factsWrap').classList.add('hidden');
+  $('#dogCard').classList.add('hidden'); $('#dogCmds').innerHTML='';
+  $('#dogSummary').innerHTML=''; $('#dogWarn').classList.add('hidden');
+  setStatus('等待任务输入…', true);
+  setStepper('idle');
+}
+
+async function runTask(){
+  if(running) return;
+  const goal = $('#goal').value.trim();
+  if(!goal){ toast('请输入任务目标'); return; }
+  resetUI();
+  let ws_init=null;
+  try{ ws_init = JSON.parse($('#ws').value||'null'); }catch(e){ showError('世界状态 JSON 解析失败：'+e.message); return; }
+  const cfg = MODE==='real' ? {
+    base_url: $('#cfgUrl').value.trim(),
+    model_name: $('#cfgModel').value.trim(),
+    api_key: $('#cfgKey').value.trim(),
+  } : {};
+  const exec = {
+    mode: EXEC,
+    time_scale: Number($('#execScale').value)||1,
+    timeout_ms: Number($('#execTimeout').value)||120000,
+    failure_rate: Number($('#execFail').value)||0,
+    comm_loss_rate: Number($('#execLoss').value)||0,
+  };
+  setRunning(true);
+  setStatus('任务已提交，正在规划任务分解…');
+  setStepper('planning');
+  $('#progWrap').classList.add('hidden'); $('#progFill').style.width='0';
+
+  let resp;
+  try{
+    resp = await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({goal,mode:MODE,ws_init,cfg,exec})});
+  }catch(e){ showError('请求失败：'+e.message); setRunning(false); return; }
+  if(!resp.ok){ showError('服务返回 HTTP '+resp.status); setRunning(false); return; }
+
+  const reader = resp.body.getReader();
+  const dec = new TextDecoder();
+  let buf='';
+  while(true){
+    const {done,value}=await reader.read();
+    if(done) break;
+    buf += dec.decode(value,{stream:true});
+    let idx;
+    while((idx=buf.indexOf('\n\n'))>=0){
+      const chunk=buf.slice(0,idx); buf=buf.slice(idx+2);
+      handleSSE(chunk);
+    }
+  }
+  setRunning(false);
+}
+
+function handleSSE(chunk){
+  let ev='message', data='';
+  chunk.split('\n').forEach(line=>{
+    if(line.startsWith('event:')) ev=line.slice(6).trim();
+    else if(line.startsWith('data:')) data += line.slice(5).replace(/^ /,'');
+  });
+  if(!data) return;
+  let p; try{ p=JSON.parse(data); }catch(e){ return; }
+  dispatch(ev,p);
+}
+
+function dispatch(ev,p){
+  switch(ev){
+    case 'start':
+      RUN_ID = p.run_id||null;
+      const exm=(EXEC_MODES||[]).find(x=>x.id===(p.exec&&p.exec.mode))||{label:p.exec&&p.exec.mode};
+      setStatus('任务已提交：'+trunc(p.goal,32)+'　·　执行通道：'+(exm.label||'-')+
+                (p.exec&&p.exec.mode!=='legacy'?`（${p.exec.time_scale}x 加速）`:''));
+      break;
+    case 'progress': showProg(p); break;
+    case 'planning': setStatus('Planner 正在分解目标并校验可行性（LangGraph）…'); setStepper('planning'); break;
+    case 'plan_failed': setStatus('⚠ 规划失败：无法产出可行计划'); showError('规划层未能产出满足校验（无环/工具可达/依赖闭合）的计划。'); setStepper('fail'); break;
+    case 'plan': renderPlan(p); setStatus('规划完成，开始执行 ReAct…'); setStepper('executing'); break;
+    case 'select': highlightSub(p.node); setStatus('执行子任务['+platOf(p.platform).label+'·'+platOf(p.platform).domain+']：'+p.description); break;
+    case 'blocked': setStatus('⚠ '+trunc(p.reason,80)); break;
+    case 'step': addTrace(p); markSub(p.subtask_id, (p.precondition_ok!==false && !/阻断/.test(p.observation||''))?'done':'blocked'); break;
+    case 'replan': setStatus('检测到阻塞，正在重规划（第 '+p.attempt+' 次）…'); break;
+    case 'reflexion': showReflex(p); setStepper('fail'); break;
+    case 'cancelled': setStatus('⏹ 已中止：'+(p.reason||'用户取消')); setStepper('fail'); break;
+    case 'result': showResult(p); setStepper(p.status==='success'?'done':'fail'); break;
+    case 'error': showError(p.detail); setStepper('fail'); break;
+    // 收到 end 即结束运行态，不依赖流关闭（避免按钮卡在“运行中”）
+    case 'end': RUN_ID=null; $('#progWrap').classList.add('hidden'); setRunning(false); break;
+  }
+}
+
+// 真机长任务的实时进度（起飞 / 巡航 / 作业 / 返航 …）
+function showProg(p){
+  const w=$('#progWrap'); w.classList.remove('hidden');
+  const pct=Math.round((p.percent||0)*100);
+  $('#progPhase').textContent = `${p.node||''} · ${p.phase||''}`;
+  $('#progPct').textContent = pct+'%';
+  $('#progFill').style.width = pct+'%';
+  setStatus(`执行中 ${pct}% · ${p.phase||''}`);
+}
+
+// 真机遥测：电量 / 里程 / 链路 / 通道状态
+function renderTele(t){
+  if(!t || !Object.keys(t).length) return '';
+  const out=[]; const nm=k=>({uav:'无人机',dog:'机器狗',shared:'算力'}[k]||k);
+  const b=t.battery;
+  if(b && typeof b==='object') out.push('🔋 '+Object.entries(b).map(([k,v])=>`${nm(k)} ${v}%`).join(' / '));
+  else if(t.battery_after!=null) out.push('🔋 '+t.battery_after+'%');
+  const o=t.odometer_m;
+  if(o && typeof o==='object'){
+    const p=Object.entries(o).filter(([,v])=>v>0).map(([k,v])=>`${nm(k)} ${v}m`);
+    if(p.length) out.push('📏 '+p.join(' / '));
+  } else if(typeof o==='number' && o>0) out.push('📏 '+o+'m');
+  if(t.link_rssi_dbm!=null) out.push('📶 '+t.link_rssi_dbm+'dBm');
+  if(t.adapter) out.push('🔌 '+t.adapter);
+  if(t.status && t.status!=='succeeded') out.push('⚠ '+t.status);
+  return out.map(x=>`<span>${esc(x)}</span>`).join('');
+}
+
+// ---------- 渲染 ----------
+function renderPlan(plan){
+  const subs = plan.subtasks||{};
+  renderDag(subs);
+  const list = $('#sublist'); list.innerHTML='';
+  Object.entries(subs).forEach(([id,st])=>{
+    const el=document.createElement('div'); el.className='sub'; el.dataset.sub=id;
+    const deps=(st.depends_on||[]).map(d=>`<span class="badge dep">← ${esc(d)}</span>`).join(' ');
+    el.innerHTML=`<div class="st">待执行</div><div class="id">${esc(id)}</div>
+      <div class="desc">${esc(st.description||'')}</div>
+      <div class="meta"><span class="badge tool">⚙ ${esc(st.tool_hint||'-')}</span> ${platBadge(st.platform)}</div>
+      <div class="meta" style="margin-top:5px">${deps||'<span class="badge dep">无依赖</span>'}</div>
+      <div class="meta" style="margin-top:6px;color:var(--muted)">✓ ${esc(trunc(st.success_criteria||'',30))}</div>`;
+    el.style.borderLeft = '3px solid ' + platOf(st.platform).color;
+    list.appendChild(el);
+  });
+}
+
+function renderDag(subs){
+  const ids=Object.keys(subs);
+  if(!ids.length){ $('#dag').innerHTML='<div class="empty">计划为空</div>'; return; }
+  const indeg={}, adj={};
+  ids.forEach(id=>{indeg[id]=0;adj[id]=[];});
+  ids.forEach(id=>(subs[id].depends_on||[]).forEach(d=>{if(subs[d]){adj[d].push(id);indeg[id]++;}}));
+  const q=ids.filter(id=>indeg[id]===0), order=[], ind2={...indeg};
+  while(q.length){const n=q.shift();order.push(n);adj[n].forEach(m=>{ind2[m]--;if(ind2[m]===0)q.push(m);});}
+  const depth={}; ids.forEach(id=>depth[id]=0);
+  order.forEach(n=>(subs[n].depends_on||[]).forEach(d=>{if(subs[d]&&depth[d]+1>depth[n])depth[n]=depth[d]+1;}));
+  const cols={}; let maxD=0;
+  ids.forEach(id=>{const d=depth[id];maxD=Math.max(maxD,d);(cols[d]=cols[d]||[]).push(id);});
+  const W=192,H=58,gx=58,gy=22;
+  let Hmax=0; Object.values(cols).forEach(c=>Hmax=Math.max(Hmax,c.length*(H+gy)+6));
+  const Wmax=(maxD+1)*(W+gx)+10;
+  const pos={};
+  Object.entries(cols).forEach(([d,arr])=>arr.forEach((id,i)=>{pos[id]={x:d*(W+gx)+10,y:i*(H+gy)+8};}));
+  let svg=`<svg viewBox="0 0 ${Wmax} ${Hmax}" width="${Wmax}" height="${Hmax}" xmlns="http://www.w3.org/2000/svg">`;
+  svg+=`<defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 Z" fill="#4b6584"/></marker></defs>`;
+  ids.forEach(id=>(subs[id].depends_on||[]).forEach(d=>{if(!pos[d])return;const a=pos[d],b=pos[id];const x1=a.x+W,y1=a.y+H/2,x2=b.x,y2=b.y+H/2,mx=(x1+x2)/2;svg+=`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}" fill="none" stroke="#3a4a63" stroke-width="1.5" marker-end="url(#ar)"/>`;}));
+  ids.forEach(id=>{const p=pos[id],st=subs[id];const pm=platOf(st.platform);
+    svg+=`<g class="dn" data-sub="${esc(id)}"><rect class="dn-rect" x="${p.x}" y="${p.y}" width="${W}" height="${H}" rx="9"/>`+
+    `<circle cx="${p.x+14}" cy="${p.y+14}" r="4" fill="${pm.color}"/>`+
+    `<text x="${p.x+24}" y="${p.y+18}" fill="${pm.color}" font-size="10" font-weight="700">${pm.label}</text>`+
+    `<text x="${p.x+12}" y="${p.y+34}" fill="#cfe3ff" font-size="12" font-weight="700">${esc(id)}</text>`+
+    `<text x="${p.x+12}" y="${p.y+48}" fill="#7fd1ff" font-size="10">⚙ ${esc(st.tool_hint||'-')}</text>`+
+    `<text x="${p.x+12}" y="${p.y+58}" fill="#9fb3cc" font-size="9">${esc(trunc(st.description||'',15))}</text></g>`;});
+  svg+=`</svg>`;
+  $('#dag').innerHTML=svg;
+}
+
+function highlightSub(id){
+  document.querySelectorAll('#dag g.dn').forEach(g=>g.classList.remove('active'));
+  const g=document.querySelector(`#dag g.dn[data-sub="${CSS.escape(id)}"]`); if(g)g.classList.add('active');
+}
+function markSub(id,status){
+  const g=document.querySelector(`#dag g.dn[data-sub="${CSS.escape(id)}"]`);
+  if(g){g.classList.remove('active');g.classList.add(status);}
+  const el=document.querySelector(`#sublist .sub[data-sub="${CSS.escape(id)}"]`);
+  if(el){el.classList.remove('active');el.classList.add(status);el.querySelector('.st').textContent = status==='done'?'已完成':'已阻断';}
+}
+
+function addTrace(s){
+  const box=$('#trace');
+  if(box.querySelector('.empty')) box.innerHTML='';
+  const tier = s.tier_used ? `<span class="pill ${s.tier_used==='edge'?'edge':'cloud'}">${s.tier_used==='edge'?'边侧':'云端'}</span>` : '';
+  const pm = platOf(s.platform);
+  const plat = s.platform ? `<span class="pill" style="background:${pm.color}22;color:${pm.color}">${pm.label}</span>` : '';
+  const ok = s.precondition_ok!==false ? `<span class="pill ok">前置✓</span>` : `<span class="pill no">前置阻断</span>`;
+  const act = s.action ? `工具：${esc(s.action.tool||'-')}\n参数：${esc(JSON.stringify(s.action.args||{},null,0))}` : '';
+  const sim = s.sim_duration_ms
+    ? `<span class="pill" title="任务真实耗时（未加速）">真实 ${(s.sim_duration_ms/1000).toFixed(1)}s</span>` : '';
+  const el=document.createElement('div');
+  el.className='tcard'+(s.precondition_ok===false?' blocked':'');
+  el.innerHTML=`<div class="th"><span class="n">#${s.step_id}</span><span class="badge">${esc(s.subtask_id||'')}</span>${plat}${tier}${ok}<span class="pill">⏱ 墙钟 ${Number(s.latency_ms||0).toFixed(1)}ms</span>${sim}</div>`+
+    (s.thought?`<div class="thought">“${esc(s.thought)}”</div>`:'')+
+    (act?`<div class="act">${esc(act)}</div>`:'')+
+    (s.observation?`<div class="obs">↳ ${esc(s.observation)}</div>`:'')+
+    (renderTele(s.telemetry)?`<div class="tele">${renderTele(s.telemetry)}</div>`:'');
+  box.appendChild(el);
+  box.parentElement.scrollTop = box.parentElement.scrollHeight;
+}
+
+function showReflex(r){
+  $('#reflexCard').classList.remove('hidden');
+  $('#reflex').innerHTML=`<p><span class="k">失败子任务：</span>${esc(r.failed_subtask||'-')}</p>`+
+    `<p><span class="k">根因层：</span>${esc(r.root_cause_layer||'-')}</p>`+
+    `<p><span class="k">症状：</span>${esc(r.symptom||'-')}</p>`+
+    `<p><span class="k">自我批评：</span>${esc(r.critique||'-')}</p>`+
+    `<p><span class="k">沉淀经验：</span>${esc(r.lessons||'-')}</p>`;
+}
+
+function showResult(res){
+  $('#metricCard').classList.remove('hidden');
+  const m=res.metrics||{};
+  const rr = (m.action_reasonableness||0)*100;
+  const stars = '★'.repeat(Math.round(m.csat||0))+'☆'.repeat(5-Math.round(m.csat||0));
+  const statusText = res.status==='success'?'成功':(res.status==='partial'?'部分成功':'失败');
+  $('#metrics').innerHTML=`
+    <div class="m"><div class="k">任务状态</div><div class="v" style="color:${res.status==='success'?'var(--ok)':'var(--danger)'}">${statusText}</div></div>
+    <div class="m"><div class="k">规划成功率</div><div class="v">${m.planning_success?'✓':'✗'}</div></div>
+    <div class="m"><div class="k">动作合理度</div><div class="v">${rr.toFixed(0)}%</div><div class="bar"><i style="width:${rr}%"></i></div></div>
+    <div class="m"><div class="k">端到端时延</div><div class="v">${(m.end_to_end_ms||0).toFixed(0)}<span style="font-size:12px">ms</span></div></div>
+    <div class="m"><div class="k">时延 p95</div><div class="v">${(m.latency_p95||0).toFixed(0)}<span style="font-size:12px">ms</span></div></div>
+    <div class="m"><div class="k">CSAT 满意度</div><div class="v stars">${stars}</div><div class="k" style="margin-top:2px">${m.csat||0}/5</div></div>
+    <div class="m"><div class="k">执行步数</div><div class="v">${m.steps||0}</div></div>
+    <div class="m"><div class="k">成功判据达成</div><div class="v" style="color:${res.success_criteria_met?'var(--ok)':'var(--danger)'}">${res.success_criteria_met?'达成':'未达成'}</div></div>`;
+  const ff=res.final_facts||{}; const keys=Object.keys(ff);
+  if(keys.length){
+    $('#factsWrap').classList.remove('hidden');
+    $('#facts').innerHTML=keys.map(k=>`<div class="fact"><b>${esc(k)}</b><br>${esc(ff[k])}</div>`).join('');
+  }
+  showDogMission(res._dog_mission);
+  setStatus('评测完成：任务状态 '+statusText+(res.reflection?'（已触发 Reflexion）':''));
+}
+
+// ---------- 机器狗指令序列（把本轮规划翻译成机器狗能吃的数据） ----------
+let LAST_MISSION=null;
+function showDogMission(m){
+  if(!m || m.error){ return; }
+  LAST_MISSION=m;
+  const cmds=m.commands||[];
+  const chIcon=c=>({nav:'🧭',sdk:'🐕',wait:'⏱',meta:'📝'}[c]||'•');
+  $('#dogCard').classList.remove('hidden');
+  $('#dogSummary').innerHTML =
+    `mission <b>${esc(m.mission_id||'-')}</b> · 指令 <b>${cmds.length}</b> 条 · ` +
+    `航点 <b>${cmds.filter(c=>c.channel==='nav'&&c.op==='start_nav').length}</b> 个 · ` +
+    `航点来源：${esc(m.waypoint_source||'无导航段')}` +
+    (m.map_id?` · 地图 <b>${esc(m.map_id)}</b>`:'');
+  const warns=m.warnings||[];
+  if(warns.length){
+    $('#dogWarn').classList.remove('hidden');
+    $('#dogWarn').textContent = warns.join('\n');
+  }
+  $('#dogCmds').innerHTML = cmds.length ? cmds.map(c=>{
+    let tail='';
+    const p=(c.params&&c.params.position)||null;
+    if(p) tail = ` → (${p.x}, ${p.y}, ${p.z})` + (c.params.orientation?` 朝向 w=${c.params.orientation.w}`:'');
+    else if(c.channel==='wait') tail = ` ${(c.params||{}).seconds||0}s`;
+    else if(c.channel==='meta') tail = ` — ${c.note||''}`;
+    else if(c.params&&c.params.map_id) tail = ` ${c.params.map_id}`;
+    return `<div>${chIcon(c.channel)} <b>${esc(c.id)}</b> ${esc(c.channel)}.${esc(c.op)}${esc(tail)}` +
+      (c.subtask_id?` <span style="color:var(--muted)">#${esc(c.subtask_id)}</span>`:'')+`</div>`;
+  }).join('') : '<div class="empty">本轮规划没有机器狗平台的子任务。</div>';
+}
+
+function download(name, text){
+  const blob=new Blob([text],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function showError(detail){
+  $('#errCard').classList.remove('hidden');
+  $('#errbox').textContent = (detail||'').split('\n').slice(-30).join('\n');
+}
+
+// ---------- 状态控件 ----------
+function setStatus(t, idle=false){
+  $('#statusText').textContent=t;
+  $('#status').classList.toggle('idle', !!idle);
+}
+function setStepper(state){
+  const map={idle:['idle'],planning:['active'],executing:['done','active'],done:['done','done','done'],fail:['done','done','fail']};
+  const cls=map[state]||['idle'];
+  document.querySelectorAll('#stepper .step').forEach((el,i)=>{
+    el.classList.remove('active','done','fail');
+    if(cls[i]==='active')el.classList.add('active');
+    else if(cls[i]==='done')el.classList.add('done');
+    else if(cls[i]==='fail')el.classList.add('fail');
+  });
+}
+function setRunning(b){
+  running=b;
+  $('#runBtn').disabled=b;
+  $('#runBtn').textContent = b?'⏳ 运行中…':'▶ 运行任务';
+  $('#abortBtn').disabled = !b;
+  $('#abortBtn').textContent = '■ 中止';
+  if(b) $('#status').classList.remove('idle');
+}
+let toastT;
+function toast(msg){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+init();
+</script>
+</body>
+</html>

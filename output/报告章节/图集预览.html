@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="utf-8"><title>报告章节流程图集</title>
+<style>body{margin:0;background:#f7f9fc;color:#1f2b3d;font-family:"Microsoft YaHei",sans-serif}
+header{padding:26px 40px;background:#fff;border-bottom:1px solid #e3e9f2}
+h1{margin:0;font-size:22px} header p{margin:8px 0 0;color:#61708a;font-size:13px}
+main{max-width:1240px;margin:0 auto;padding:24px}
+section{background:#fff;border:1px solid #e3e9f2;border-radius:12px;padding:18px 22px;margin-bottom:22px}
+h2{font-size:16px;margin:0 0 12px} img{width:100%;height:auto;display:block}
+p{color:#61708a;font-size:12.5px;margin:10px 0 0}</style></head>
+<body><header><h1>报告章节 · 流程图集（精简版）</h1><p>5 张浅色矢量图，单向线性、无交叉分支，可直接插入 Word 2016+；Markdown 正文中另有 10 张同规格 Mermaid 图。</p></header>
+<main><section><h2>图 3-1  空地协同建图与路径规划总体技术路线</h2><img src="figures/图3-1_总体技术路线.svg" alt="图 3-1  空地协同建图与路径规划总体技术路线"/><p>闭环要点：地图既是感知输出，也是决策前置校验的输入；突发障碍触发局部重构并写回地图增量块。</p></section>
+<section><h2>图 3-2  空地异构建图与地图融合流程</h2><img src="figures/图3-2_空地建图与融合.svg" alt="图 3-2  空地异构建图与地图融合流程"/><p>对应需求 2.2.1：空中全局建图、地面局部补盲、配准与体素融合生成统一环境地图。</p></section>
+<section><h2>图 3-4  少视角快速三维重建的训练闭环</h2><img src="figures/图3-4_少视角快速重建闭环.svg" alt="图 3-4  少视角快速三维重建的训练闭环"/><p>三条路径并行：抑制少视角过拟合、约束基元增生、压缩单次迭代开销。</p></section>
+<section><h2>图 4-1  多智能体协同调度五层技术路线</h2><img src="figures/图4-1_五层协同调度路线.svg" alt="图 4-1  多智能体协同调度五层技术路线"/><p>对应需求 2.3：任务建模、智能体建模、协同调度、边缘决策与评价闭环。</p></section>
+<section><h2>图 4-3  Reasoner 有界重规划闭环</h2><img src="figures/图4-3_有界重规划闭环.svg" alt="图 4-3  Reasoner 有界重规划闭环"/><p>急停走独立终止分支，取消后立即停机，不再进入重规划或反思。</p></section></main></body></html>
